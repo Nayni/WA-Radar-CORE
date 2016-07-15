@@ -1,4 +1,4 @@
-local WA_DISPLAY = function()
+local CUSTOM_DISPLAY = function()
 
       local core = WA_RADAR_CORE
       if not core then return end
@@ -10,7 +10,7 @@ local WA_DISPLAY = function()
       frame:SetWidth(width)
       frame:SetHeight(width)
 
-      core._updateScale(width)
+      core:_updateScale(width)
 
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")

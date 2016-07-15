@@ -10,9 +10,7 @@ local WA_DISPLAY = function()
       frame:SetWidth(width)
       frame:SetHeight(width)
 
-      core._range = width / 2
-      core._range2 = core._range * core._range
-      core._scale = core._range / core.config.maxRange
+      core._updateScale(width)
 
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")

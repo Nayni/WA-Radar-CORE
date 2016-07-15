@@ -90,7 +90,14 @@ core._disks = {}
 core._enabled = false
 core._frame = CreateFrame("Frame", nil, UIParent)
 
-
+----------------------------------------------------
+-- SCALING
+----------------------------------------------------
+function core:_updateScale(width)
+      core._range = width / 2
+      core._range2 = core._range * core._range
+      core._scale = core._range / core.config.maxRange
+end
 
 ----------------------------------------------------
 -- BLIPS, aka the dots on the radar!
@@ -529,7 +536,7 @@ function core:_genKey(source, destination)
       return source .. "||".. destination
 end
 
-function core:__intersection(x1, y1, x2, y2, r2)
+function core:_intersection(x1, y1, x2, y2, r2)
       local dx, dy = x2 - x1, y2 - y1
       local dr2 = dx * dx + dy * dy
       local D = x1 * y2 - x2 * y1

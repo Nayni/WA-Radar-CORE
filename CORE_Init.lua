@@ -128,13 +128,13 @@ core._newBlip = {
       __index = function(t, k)
             if k == "player" then return end
 
-            local blip = CreateFrame("Frame", nil, core._frame)
+            local blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. k, core._frame)
             t[k] = blip
             blip:SetPoint("CENTER")
             blip:SetFrameStrata("HIGH")
             blip:SetFrameLevel(1)
             blip:SetSize(22,22)
-            blip.t = blip:CreateTexture(nil, "BORDER", nil, 4)
+            blip.t = blip.t or blip:CreateTexture(nil, "BORDER", nil, 4)
             blip.t:SetAllPoints()
             blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
             blip.t:SetTexCoord(.5, .625, .5, .75)
@@ -178,6 +178,13 @@ function core:_updateBlip(unit)
             core._displayedUnits[unit] = false
             blip:Hide()
       end
+end
+
+function core:_hideAllBlips()
+      for _, blip in pairs(core._blips) do
+            blip:Hide()
+      end
+      core._displayedUnits = {}
 end
 
 ----------------------------------------------------
@@ -579,12 +586,12 @@ function core:_createLine(src, dest)
       if core._lines[key] then
             line = core._lines[key]
       else
-            line = CreateFrame("Frame", nil, core._frame)
+            line = CreateFrame("Frame", "WA_RADAR_LINE" .. key, core._frame)
             setmetatable(line, linePrototypeMT)
 
             line.key = key
             line:SetFrameStrata("BACKGROUND")
-            line.texture = line:CreateTexture(nil, "BACKGROUND", nil, 1)
+            line.texture = line.texture or line:CreateTexture(nil, "BACKGROUND", nil, 1)
             line.texture:SetAllPoints()
             line.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Square_White")
             line:SetSize(20, 20)
@@ -741,14 +748,14 @@ function core:_createDisk(src)
       if core._disks[key] then
             disk = core._disks[key]
       else
-            disk = CreateFrame("Frame", nil, core._frame)
+            disk = CreateFrame("Frame", "WA_RADAR_DISK" .. key, core._frame)
             disk.key = key
             setmetatable(disk, diskPrototypeMT)
 
             disk:SetPoint("CENTER")
             disk:SetFrameStrata("BACKGROUND")
 
-            disk.texture = disk:CreateTexture(nil, "BACKGROUND", nil, 1)
+            disk.texture = disk.texture or disk:CreateTexture(nil, "BACKGROUND", nil, 1)
             disk.texture:SetAllPoints()
             disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
             disk.texture:SetVertexColor(1, 0, 0, 0.3)
@@ -799,6 +806,7 @@ function core:Disable()
       if core._enabled then
             core:DisconnectAllLines()
             core:DestroyAllDisks()
+            core:_hideAllBlips()
             core._enabled = false
       end
 end

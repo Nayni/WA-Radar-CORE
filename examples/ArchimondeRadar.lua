@@ -50,7 +50,8 @@ local CUSTOM_TRIGGER = function(event, ...)
 
             if focused and wrought then
                   -- we can give WA_RADAR_CORE GUIDs and names, it will deal with it for you
-                  local line = core:Connect(wrought, focused, EXTEND)
+                  -- a width of 4 is perfect for archimonde focused chaos beams
+                  local line = core:Connect(wrought, focused, 4, EXTEND)
                   -- keep the line ref, need it for later
                   aura_env.lines[focused] = line
             end

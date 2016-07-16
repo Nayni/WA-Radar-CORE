@@ -120,19 +120,19 @@ core._newBlip = {
       __index = function(t, k)
             if k == "player" then return end
 
-              local blip = CreateFrame("Frame", nil, core._frame)
-              t[k] = blip
-              blip:SetPoint("CENTER")
-              blip:SetFrameStrata("HIGH")
-              blip:SetFrameLevel(1)
-              blip:SetSize(22,22)
-              blip.t = blip:CreateTexture(nil, "BORDER", nil, 4)
-              blip.t:SetAllPoints()
-              blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
-              blip.t:SetTexCoord(.5, .625, .5, .75)
+            local blip = CreateFrame("Frame", nil, core._frame)
+            t[k] = blip
+            blip:SetPoint("CENTER")
+            blip:SetFrameStrata("HIGH")
+            blip:SetFrameLevel(1)
+            blip:SetSize(22,22)
+            blip.t = blip:CreateTexture(nil, "BORDER", nil, 4)
+            blip.t:SetAllPoints()
+            blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
+            blip.t:SetTexCoord(.5, .625, .5, .75)
 
-              return blip
-        end
+            return blip
+      end
 }
 core._blips = setmetatable({}, core._newBlip)
 
@@ -264,8 +264,8 @@ local linePrototypeDummyFrame = CreateFrame("Frame")
 local lineMT = { __index = linePrototypeDummyFrame }
 
 local linePrototype = {
-      Draw = function(this, source, destination, width, extend, danger, dangerZone)
-            this:_initialize(source, destination, width, extend, danger, dangerZone)
+      Draw = function(this, source, destination, width, extend, danger)
+            this:_initialize(source, destination, width, extend, danger)
             this:Show()
       end,
 
@@ -277,27 +277,46 @@ local linePrototype = {
             this.texture:SetVertexColor(r, g, b, a)
       end,
 
-      BelongsTo = function(this, srcX, srcY, destX, destY)
+      BelongsTo = function(this, sourceX, sourceY, targetX, targetY)
             local pX, pY = core._positions.player[1], core._positions.player[2]
 
-            local srcDist = ((pY-destY)^2+(pX-destX)^2)^(1/2)
-            local destDist = ((pY-srcY)^2+(pX-srcX)^2)^(1/2)
+            local VECTOR_LENGTH = 300
+            local VECTOR_DEPTH = (4/core._scale) * 0.125 * this.width + 1
 
-            local u = ((pY-destY)*(srcY-destY) + (pX-destX)*(srcX-destX)) / ((srcY-destY)^2 + (srcX-destX)^2)
-            local pdist = 25
+            local dX = (sourceX - targetX)
+            local dY = (sourceY - targetY)
+            local dist = math.sqrt(dX * dX + dY * dY)
 
-            if u <= 1 then
-                  local cx = destY + u * (srcY - destY)
-                  local cy = destX + u * (srcX - destX)
+            local t_cos = (targetX-sourceX) / dist
+            local newX = VECTOR_LENGTH * t_cos  +  targetX
 
-                  pdist = math.sqrt((pY - cx)^2+(pX-cy)^2)
-            end
+            local t_sin = (targetY-sourceY) / dist
+            local newY = VECTOR_LENGTH * t_sin  +  targetY
 
-            if pdist < this.dangerZone or (destDist and u == 1/0) then
-                  return true
-            else
-                  return false
-            end
+            local radiusX,radiusY = VECTOR_DEPTH * t_sin, VECTOR_DEPTH * t_cos
+
+            local point1x = sourceX + radiusX
+            local point1y = sourceY - radiusY
+
+            local point2x = sourceX - radiusX
+            local point2y = sourceY + radiusY
+
+            local point3x = newX + radiusX
+            local point3y = newY - radiusY
+
+            local point4x = newX - radiusX
+            local point4y = newY + radiusY
+
+            return this._belongsTo(pX,pY,point1x,point2x,point4x,point3x,point1y,point2y,point4y,point3y)
+      end,
+
+      _belongsTo = function(pX,pY,point1x,point2x,point3x,point4x,point1y,point2y,point3y,point4y)
+		local D1 = (pX - point1x) * (point2y - point1y) - (pY - point1y) * (point2x - point1x)
+		local D2 = (pX - point2x) * (point3y - point2y) - (pY - point2y) * (point3x - point2x)
+		local D3 = (pX - point3x) * (point4y - point3y) - (pY - point3y) * (point4x - point3x)
+		local D4 = (pX - point4x) * (point1y - point4y) - (pY - point4y) * (point1x - point4x)
+
+		return (D1 < 0 and D2 < 0 and D3 < 0 and D4 < 0) or (D1 > 0 and D2 > 0 and D3 > 0 and D4 > 0)
       end,
 
       _getDangerColor = function(this, danger)
@@ -367,17 +386,15 @@ local linePrototype = {
             end
       end,
 
-      _initialize = function(this, source, destination, width, extend, danger, dangerZone)
+      _initialize = function(this, source, destination, width, extend, danger)
             extend = extend or core.constants.lines.extend.SEGMENT
             danger = danger or core.constants.lines.danger.DANGER
-            dangerZone = dangerZone or 2
 
             this.source = source
             this.destination = destination
             this.width = width
             this.extend = extend
             this.danger = danger
-            this.dangerZone = dangerZone
 
             this:SetScript("OnUpdate", this._draw)
       end,
@@ -412,8 +429,6 @@ local linePrototype = {
 
             if not sx then return end
             if not ex then return end
-
-            this:_updateColor()
 
             local inRange1, inRange2 = sx * sx + sy * sy <= core._range2, ex * ex + ey * ey <= core._range2
             local w = this.width
@@ -465,6 +480,13 @@ local linePrototype = {
             end
 
             local dx, dy, cx, cy = ex - sx, ey - sy, (sx + ex) / 2, (sy + ey) / 2
+
+            core._dx = dx
+            core._dy = dy
+
+            core._cx = cx
+            core._cy = cy
+
             if dx < 0 then
                   dx, dy = -dx, -dy
             end
@@ -497,9 +519,12 @@ local linePrototype = {
 
                   this.texture:SetTexCoord(TLx, TLy, BLx, BLy, TRx, TRy, BRx, BRy)
                   this:ClearAllPoints()
+
                   this:SetPoint("BOTTOMLEFT", core._frame, "CENTER", cx - Bwid, cy - Bhgt)
                   this:SetPoint("TOPRIGHT", core._frame, "CENTER", cx + Bwid, cy + Bhgt)
             end
+
+            this:_updateColor()
       end,
 }
 
@@ -737,11 +762,11 @@ function core:AddStatic(name, x, y)
       core._staticPoints[name][2] = y
 end
 
-function core:Connect(source, destination, width, extend, danger, dangerZone)
+function core:Connect(source, destination, width, extend, danger)
       local key = core:_genKey(source, destination)
       local line = core:_createLine(key)
 
-      line:Draw(source, destination, width, extend, danger, dangerZone)
+      line:Draw(source, destination, width, extend, danger)
       return line
 end
 

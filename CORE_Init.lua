@@ -231,7 +231,7 @@ function core:_getPosition(src)
       if not unit then return end
       if not core._positions[unit] then return end
 
-      return unit, core._positions[unit][1], core._positions[unit][2]
+      return unit, core._positions[unit][1], core._positions[unit][2], core._positions[unit][3]
 end
 
 function core:FindGUID(src)
@@ -619,7 +619,7 @@ function core:_createLine(src, dest)
             setmetatable(line, linePrototypeMT)
 
             line.key = key
-            line:SetFrameStrata("BACKGROUND")
+            line:SetFrameStrata("MEDIUM")
             line.texture = line.texture or line:CreateTexture(nil, "BACKGROUND", nil, 1)
             line.texture:SetAllPoints()
             line.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Square_White")
@@ -805,7 +805,7 @@ function core:_createDisk(src)
             setmetatable(disk, diskPrototypeMT)
 
             disk:SetPoint("CENTER")
-            disk:SetFrameStrata("BACKGROUND")
+            disk:SetFrameStrata("MEDIUM")
 
             disk.texture = disk.texture or disk:CreateTexture(nil, "BACKGROUND", nil, 1)
             disk.texture:SetAllPoints()
@@ -858,6 +858,7 @@ function core:Disable()
       if core._enabled then
             core:DisconnectAllLines()
             core:DestroyAllDisks()
+            core:RemoveAllStatic()
             core:_hideAllBlips()
             core._enabled = false
       end
@@ -867,18 +868,46 @@ function core:IsEnabled()
       return core._enabled
 end
 
-function core:AddStatic(name, x, y)
+function core:Static(name, x, y)
       core._staticPoints = core._staticPoints or {}
       core._roster = core._roster or {}
       core._nameRoster = core._nameRoster or {}
+      core._unitRoster = core._unitRoster or {}
 
       core._roster[name] = name
       core._nameRoster[name] = name
       core._unitRoster[name] = name
-
       core._staticPoints[name] = core._staticPoints[name] or {}
-      core._staticPoints[name][1] = x
-      core._staticPoints[name][2] = y
+
+      local unit, posX, posY, instanceID = core:_getPosition(x)
+
+      if not posX then
+            core._staticPoints[name][1] = x
+            core._staticPoints[name][2] = y
+      else
+            core._staticPoints[name][1] = posX
+            core._staticPoints[name][2] = posY
+      end
+end
+
+function core:RemoveStatic(name)
+      core._staticPoints = core._staticPoints or {}
+      core._roster = core._roster or {}
+      core._nameRoster = core._nameRoster or {}
+      core._unitRoster = core._unitRoster or {}
+
+      core._roster[name] = nil
+      core._nameRoster[name] = nil
+      core._unitRoster[name] = nil
+      core._staticPoints[name] = nil
+end
+
+function core:RemoveAllStatic()
+      core._staticPoints = core._staticPoints or {}
+
+      for name, _ in pairs(core._staticPoints) do
+            core:RemoveStatic(name)
+      end
 end
 
 function core:Connect(src, dest, width, extend, danger)

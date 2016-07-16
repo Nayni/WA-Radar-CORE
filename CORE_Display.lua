@@ -15,7 +15,12 @@ local CUSTOM_DISPLAY = function()
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
       frame.background:SetAllPoints(frame)
-      frame.background:SetVertexColor(.3, .3, .3, 0.6)
+
+      if core._inDangerLine or core._inDangerDisk then
+            frame.background:SetVertexColor(.4, .3, .3, 0.6)
+      else
+            frame.background:SetVertexColor(.3, .3, .3, 0.6)
+      end
 
       frame.arrow = frame.arrow or CreateFrame("Frame", nil, frame)
       frame.arrow:SetFrameStrata("HIGH")

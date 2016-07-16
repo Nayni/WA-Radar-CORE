@@ -79,6 +79,8 @@ core._sin = math.sin(core._facing)
 core._cos = math.cos(core._facing)
 
 core._playerName = GetUnitName("player", true)
+core._inDangerLine = false
+core._inDangerDisk = false
 
 core._positions = {}
 core._positions.player = GetUnitPosition("player")
@@ -387,9 +389,30 @@ local linePrototype = {
             end
       end,
 
+      _indicateDanger = function(this, inDanger)
+            local neutral = false
+            local shouldReverse = false
+
+            if this.danger == core.constants.lines.danger.FRIENDLY then
+                  shouldReverse = true
+            elseif this.danger == core.constants.lines.danger.NEUTRAL then
+                  neutral = true
+            end
+
+            if neutral then
+                  inDanger = false
+            elseif shouldReverse then
+                  inDanger = not inDanger
+            end
+
+            core._inDangerLine = inDanger
+      end,
+
       _updateColor = function(this)
-            local srcUnit, srcX, srcY = core._getPosition(this.source)
-            local destUnit, destX, destY = core._getPosition(this.destination)
+            local srcUnit, srcX, srcY = core:_getPosition(this.source)
+            local destUnit, destX, destY = core:_getPosition(this.destination)
+
+            core._inDangerLine = false
 
             if srcUnit == "player" or destUnit == "player" then return end
             if (not srcX) or (not destX) then return end
@@ -410,20 +433,26 @@ local linePrototype = {
             if this.extend == core.constants.lines.extend.SEGMENT then
                   if belongsToOne and belongsToTwo then
                         this:Color(r1,g1,b1,a1)
+                        this:_indicateDanger(true)
                   else
                         this:Color(r2,g2,b2,a2)
+                        this:_indicateDanger(false)
                   end
             elseif this.extend == core.constants.lines.extend.HALF then
                   if belongsToOne then
                         this:Color(r1,g1,b1,a1)
+                        this:_indicateDanger(true)
                   else
                         this:Color(r2,g2,b2,a2)
+                        this:_indicateDanger(false)
                   end
             else
                   if belongsToOne or belongsToTwo then
                         this:Color(r1,g1,b1,a1)
+                        this:_indicateDanger(true)
                   else
                         this:Color(r2,g2,b2,a2)
+                        this:_indicateDanger(false)
                   end
             end
       end,
@@ -699,7 +728,28 @@ local diskPrototype = {
             this:_updateColor()
       end,
 
+      _indicateDanger = function(this, inDanger)
+            local neutral = false
+            local shouldReverse = false
+
+            if this.danger == core.constants.disks.danger.FRIENDLY then
+                  shouldReverse = true
+            elseif this.danger == core.constants.disks.danger.NEUTRAL then
+                  neutral = true
+            end
+
+            if neutral then
+                  inDanger = false
+            elseif shouldReverse then
+                  inDanger = not inDanger
+            end
+
+            core._inDangerDisk = inDanger
+      end,
+
       _updateColor = function(this)
+            core._inDangerDisk = false
+
             local danger = this.danger
             local danger2 = core.constants.disks.danger.FRIENDLY
 
@@ -723,8 +773,10 @@ local diskPrototype = {
 
             if distance < this.radius then
                   this:Color(r1,g1,b1,a1)
+                  this:_indicateDanger(true)
             else
                   this:Color(r2,g2,b2,a2)
+                  this:_indicateDanger(false)
             end
       end,
 }
@@ -758,7 +810,7 @@ function core:_createDisk(src)
             disk.texture = disk.texture or disk:CreateTexture(nil, "BACKGROUND", nil, 1)
             disk.texture:SetAllPoints()
             disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
-            disk.texture:SetVertexColor(1, 0, 0, 0.3)
+            disk.texture:SetVertexColor(1, 0, 0, 0.5)
 
             core._disks[key] = disk
       end

@@ -548,6 +548,142 @@ function core:_intersection(x1, y1, x2, y2, r2)
       end
 end
 
+----------------------------------------------------
+-- DISKS
+----------------------------------------------------
+function core:_diskUpdater(disk)
+      if not disk then return end
+      if not disk.shown then
+            disk:Hide()
+            return
+      end
+
+      local src = disk.source
+      local srcUnit = core._roster[src]
+
+      if not srcUnit then return end
+
+      -- TODO: Handle errors better
+      local sx, sy, inRange = core._radarPositions[srcUnit][1], core._radarPositions[srcUnit][2], core._radarPositions[srcUnit][3]
+      disk:SetPoint("CENTER", core._frame, "CENTER", sx, sy)
+
+      if inRange then
+            disk:Show()
+      else
+            disk:Hide()
+      end
+end
+
+local diskDummyFrame = CreateFrame("Frame")
+local diskMT = { __index = diskDummyFrame }
+
+local diskPrototype = {
+
+      Draw = function(this, radius, source, danger)
+            danger = danger or core.constants.disks.danger.DANGER
+
+            this:_initialize(radius, source, danger)
+            this.shown = true
+            this:Show()
+      end,
+
+      Color = function(this, r, g, b, a)
+            this.texture:SetVertexColor(r, g, b, a)
+      end,
+
+      Destroy = function(this)
+            this.shown = false
+            this:Hide()
+      end,
+
+      _initialize = function(this, radius, source, danger)
+            this.radius = radius
+            this.danger = danger
+            this.source = source
+            this:SetScript("OnUpdate", this._draw)
+      end,
+
+      _getDangerColor = function(this, danger)
+            danger = danger or core.constants.lines.danger.danger
+            if danger == core.constants.lines.danger.DANGER then
+                  return 1, 0, 0, 0.3
+            elseif danger == core.constants.lines.danger.NEUTRAL then
+                  return 0, 0, 1, 0.3
+            else
+                  return 0, 1, 0, 0.3
+            end
+      end,
+
+      _draw = function(this)
+            local radiusScaled = core._scale * this.radius
+            local R2 = radiusScaled * core._tCoeff * 2
+
+            this.radiusScaled = radiusScaled
+            this:SetSize(R2, R2)
+
+            this:_updateColor()
+      end,
+
+      _updateColor = function(this)
+            local danger = this.danger
+            local danger2 = core.constants.disks.danger.FRIENDLY
+
+            if this.danger == core.constants.disks.danger.FRIENDLY then
+                  danger2 = core.constants.disks.danger.DANGER
+            end
+
+            local r1, g1, b1, a1 = this:_getDangerColor(danger)
+            local r2, g2, b2, a2 = this:_getDangerColor(danger2)
+
+            local pX, pY = core._positions.player[1], core._positions.player[2]
+
+            local src = this.source
+            local srcUnit = core._roster[src]
+
+            if not srcUnit then return end
+
+            -- TODO: Handle errors better
+            local srcX, srcY = core._positions[srcUnit][1], core._positions[srcUnit][2]
+
+            local distance = ((pY-srcY)^2+(pX-srcX)^2)^(1/2)
+
+            if distance < this.radius then
+                  this:Color(r1,g1,b1,a1)
+            else
+                  this:Color(r2,g2,b2,a2)
+            end
+      end,
+}
+
+setmetatable(diskPrototype, diskMT)
+local diskPrototypeMT = { __index = diskPrototype }
+
+function core:NewDisk(key, radius, source)
+    core._disks = core._disks or {}
+
+    local disk
+
+    if core._disks[key] then
+        disk = core._disks[key]
+    else
+        disk = CreateFrame("Frame", nil, core._frame)
+        disk.key = key
+        setmetatable(disk, diskPrototypeMT)
+
+        disk:SetPoint("CENTER")
+        disk:SetFrameStrata("BACKGROUND")
+
+        disk.texture = disk:CreateTexture(nil, "BACKGROUND", nil, 1)
+        disk.texture:SetAllPoints()
+        disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
+        disk.texture:SetVertexColor(1, 0, 0, 0.3)
+
+        core._disks[key] = disk
+    end
+
+    disk:Hide()
+    return disk
+end
 
 ----------------------------------------------------
 -- DISPLAY UPDATER
@@ -563,6 +699,10 @@ function core:_updater()
       for unit in pairs(core._displayedUnits) do
             core:_updateBlip(unit)
       end
+
+      for key, disk in pairs(core._disks) do
+          core:_diskUpdater(disk)
+      end
 end
 
 ----------------------------------------------------
@@ -571,7 +711,8 @@ end
 function core:Enable()
       if core._enabled then return end
 
-      -- before we enable, run the updater once, make sure everything has an initial value
+      -- before we enable, run the updater once,
+      -- make sure everything has an initial value
       core:_updater()
 
       core._enabled = true
@@ -580,6 +721,7 @@ end
 function core:Disable()
       if core._enabled then
             core:DisconnectAll()
+            core:DestroyAllDisks()
             core._enabled = false
       end
 end
@@ -617,4 +759,18 @@ function core:DisconnectAll()
       for key, line in pairs(core._lines) do
             core:Disconnect(line.source, line.destination)
       end
+end
+
+function core:Disk(source, radius, danger)
+    local key = source
+    local disk = core:NewDisk(key)
+
+    disk:Draw(radius, source, danger)
+    return disk
+end
+
+function core:DestroyAllDisks()
+    for key, disk in pairs(core._disks) do
+        disk:Destroy()
+    end
 end

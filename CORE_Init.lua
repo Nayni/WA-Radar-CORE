@@ -22,6 +22,10 @@ core.config = {
       -- Edit this value to see either more or less on the radar.
       -- MUST BE GREATER THEN 0, ELSE BAD THINGS WILL HAPPEN!
       maxRange = 60,
+
+      _lines = {
+            _defaultWidth = 4
+      }
 }
 
 ----------------------------------------------------
@@ -83,7 +87,11 @@ core._radarPositions = {}
 core._radarPositions.player = { 0, 0, true }
 
 core._displayedUnits = {}
+
 core._roster = {}
+core._nameRoster = {}
+core._unitRoster = {}
+
 core._staticPoints = {}
 core._lines = {}
 core._disks = {}
@@ -176,9 +184,6 @@ end
 -- POSITIONING AND ROSTER
 ----------------------------------------------------
 
---[[
-  Calculates the relative position on the radar based on true in-game coordinates.
-]]
 function core:GetRadarPosition(x, y, instanceID)
       local posX, posY, instanceID = x, y, instanceID
 
@@ -196,6 +201,42 @@ function core:GetRadarPosition(x, y, instanceID)
       end
 end
 
+function core:_getRadarPosition(src)
+      if not src then return end
+      local srcGUID = core:FindGUID(src)
+      if not srcGUID then return end
+      local unit = core._roster[srcGUID]
+
+      if not unit then return end
+      if not core._radarPositions[unit] then return end
+
+      return unit, core._radarPositions[unit][1], core._radarPositions[unit][2], core._radarPositions[unit][3]
+end
+
+function core:_getPosition(src)
+      if not src then return end
+      local srcGUID = core:FindGUID(src)
+      if not srcGUID then return end
+      local unit = core._roster[srcGUID]
+
+      if not unit then return end
+      if not core._positions[unit] then return end
+
+      return unit, core._positions[unit][1], core._positions[unit][2]
+end
+
+function core:FindGUID(src)
+      if core._roster[src] then
+            return src
+      elseif core._nameRoster[src] then
+            return core._nameRoster[src]
+      elseif core._unitRoster[src] then
+            return core._unitRoster[src]
+      else
+            return nil
+      end
+end
+
 function core:_updatePositions()
       core._positions.player = core._positions.player or {}
       core._positions.player[1], core._positions.player[2], core._positions.player[3] = GetUnitPosition("player")
@@ -205,7 +246,6 @@ function core:_updatePositions()
 
             local x, y, instanceID = GetUnitPosition(unit)
 
-            -- TODO: Clean this up and do more checks before assuming it's a static point.
             if not x then
                   x, y, instanceID = core._staticPoints[unit][1], core._staticPoints[unit][2], core._positions.player[3]
             end
@@ -223,7 +263,10 @@ function core:_updateRoster()
 
     -- Load player into the roster
     local playerGUID = UnitGUID("player")
+    local playerName = UnitName("player")
     core._roster[playerGUID] = "player"
+    core._nameRoster[playerName] = playerGUID
+    core._unitRoster["player"] = playerGUID
 
     -- Load raid into the roster
     if IsInRaid() then
@@ -238,7 +281,10 @@ function core:_updateRoster()
             end
 
             local unitGUID = UnitGUID(unit)
+            local unitName = UnitName(unit)
             core._roster[unitGUID] = unit
+            core._nameRoster[unitName] = unitGUID
+            core._unitRoster[unit] = unitGUID
         end
     end
 
@@ -247,6 +293,8 @@ function core:_updateRoster()
         core._displayedUnits[name] = false
         core:_initBlip(name)
         core._roster[name] = name
+        core._nameRoster[name] = name
+        core._unitRoster[name] = name
     end
 
     -- Hide all blips if they shouldn't be displayed
@@ -264,12 +312,12 @@ local linePrototypeDummyFrame = CreateFrame("Frame")
 local lineMT = { __index = linePrototypeDummyFrame }
 
 local linePrototype = {
-      Draw = function(this, source, destination, width, extend, danger)
-            this:_initialize(source, destination, width, extend, danger)
+      Draw = function(this, width, extend, danger)
+            this:_initialize(width, extend, danger)
             this:Show()
       end,
 
-      Destroy = function(this)
+      Disconnect = function(this)
             this:Hide()
       end,
 
@@ -278,7 +326,9 @@ local linePrototype = {
       end,
 
       BelongsTo = function(this, sourceX, sourceY, targetX, targetY)
-            local pX, pY = core._positions.player[1], core._positions.player[2]
+            local _, pX, pY = core:_getPosition("player")
+
+            if not pX then return false end
 
             local VECTOR_LENGTH = 300
             local VECTOR_DEPTH = (4/core._scale) * 0.125 * this.width + 1
@@ -331,26 +381,11 @@ local linePrototype = {
       end,
 
       _updateColor = function(this)
-            local src = this.source
-            local dest = this.destination
+            local srcUnit, srcX, srcY = core._getPosition(this.source)
+            local destUnit, destX, destY = core._getPosition(this.destination)
 
-            local srcUnit = core._roster[src]
-            local destUnit = core._roster[dest]
-
-            if srcUnit == "player" or destUnit == "player" then
-                  return
-            end
-
-            if (not core._positions[srcUnit]) or (not core._positions[destUnit]) then
-                  return
-            end
-
-            local srcX, srcY = core._positions[srcUnit][1], core._positions[srcUnit][2]
-            local destX, destY = core._positions[destUnit][1], core._positions[destUnit][2]
-
-            if (not srcX) or (not destX) then
-                  return
-            end
+            if srcUnit == "player" or destUnit == "player" then return end
+            if (not srcX) or (not destX) then return end
 
             local belongsToOne = this:BelongsTo(srcX, srcY, destX, destY)
             local belongsToTwo = this:BelongsTo(destX, destY, srcX, srcY)
@@ -386,12 +421,10 @@ local linePrototype = {
             end
       end,
 
-      _initialize = function(this, source, destination, width, extend, danger)
+      _initialize = function(this, width, extend, danger)
             extend = extend or core.constants.lines.extend.SEGMENT
             danger = danger or core.constants.lines.danger.DANGER
 
-            this.source = source
-            this.destination = destination
             this.width = width
             this.extend = extend
             this.danger = danger
@@ -411,22 +444,11 @@ local linePrototype = {
       end,
 
       _draw = function(this)
-            local src = this.source
-            local dest = this.destination
-
-            if not src then return end
-            if not dest then return end
-
-            local srcUnit = core._roster[src]
-            local destUnit = core._roster[dest]
+            local srcUnit, sx, sy, _ = core:_getRadarPosition(this.source)
+            local destUnit, ex, ey, _ = core:_getRadarPosition(this.destination)
 
             if not srcUnit then return end
             if not destUnit then return end
-
-            -- TODO: Handle errors better
-            local sx, sy = core._radarPositions[srcUnit][1], core._radarPositions[srcUnit][2]
-            local ex, ey = core._radarPositions[destUnit][1], core._radarPositions[destUnit][2]
-
             if not sx then return end
             if not ex then return end
 
@@ -528,9 +550,29 @@ local linePrototype = {
       end,
 }
 
+function core:_genKey(srcGUID, destGUID)
+      if not destGUID then
+            return srcGUID
+      else
+            return srcGUID .. "-".. destGUID
+      end
+end
+
 setmetatable(linePrototype, lineMT)
 local linePrototypeMT = { __index = linePrototype }
-function core:_createLine(key)
+
+function core:_createLine(src, dest)
+      if not src then return end
+      if not dest then return end
+
+      local srcGUID = core:FindGUID(src)
+      local destGUID = core:FindGUID(dest)
+
+      if not srcGUID then print("source not found") return end
+      if not destGUID then print("destination not found") return end
+
+      local key = core:_genKey(srcGUID, destGUID)
+
       core._lines = core._lines or {}
       local line
 
@@ -550,15 +592,14 @@ function core:_createLine(key)
             core._lines[key] = line
       end
 
+      line.source = srcGUID
+      line.destination = destGUID
+
       line.texture:SetVertexColor(0,1,0,1)
       line.texture:SetBlendMode("BLEND")
       line:Hide()
 
       return line
-end
-
-function core:_genKey(source, destination)
-      return source .. "||".. destination
 end
 
 function core:_intersection(x1, y1, x2, y2, r2)
@@ -573,6 +614,12 @@ function core:_intersection(x1, y1, x2, y2, r2)
       end
 end
 
+function core:_connect(src, dest, width, extend, danger)
+      local line = core:_createLine(src, dest)
+      line:Draw(width, extend, danger)
+      return line
+end
+
 ----------------------------------------------------
 -- DISKS
 ----------------------------------------------------
@@ -583,13 +630,11 @@ function core:_diskUpdater(disk)
             return
       end
 
-      local src = disk.source
-      local srcUnit = core._roster[src]
+      local srcUnit, sx, sy, inRange = core:_getRadarPosition(disk.source)
 
       if not srcUnit then return end
+      if not sx then return end
 
-      -- TODO: Handle errors better
-      local sx, sy, inRange = core._radarPositions[srcUnit][1], core._radarPositions[srcUnit][2], core._radarPositions[srcUnit][3]
       disk:SetPoint("CENTER", core._frame, "CENTER", sx, sy)
 
       if inRange then
@@ -604,10 +649,10 @@ local diskMT = { __index = diskDummyFrame }
 
 local diskPrototype = {
 
-      Draw = function(this, radius, source, danger)
+      Draw = function(this, radius, danger)
             danger = danger or core.constants.disks.danger.DANGER
 
-            this:_initialize(radius, source, danger)
+            this:_initialize(radius, danger)
             this.shown = true
             this:Show()
       end,
@@ -621,15 +666,13 @@ local diskPrototype = {
             this:Hide()
       end,
 
-      _initialize = function(this, radius, source, danger)
+      _initialize = function(this, radius, danger)
             this.radius = radius
             this.danger = danger
-            this.source = source
             this:SetScript("OnUpdate", this._draw)
       end,
 
       _getDangerColor = function(this, danger)
-            danger = danger or core.constants.lines.danger.danger
             if danger == core.constants.lines.danger.DANGER then
                   return 1, 0, 0, 0.3
             elseif danger == core.constants.lines.danger.NEUTRAL then
@@ -660,15 +703,14 @@ local diskPrototype = {
             local r1, g1, b1, a1 = this:_getDangerColor(danger)
             local r2, g2, b2, a2 = this:_getDangerColor(danger2)
 
-            local pX, pY = core._positions.player[1], core._positions.player[2]
+            local _, pX, pY = core:_getPosition("player")
 
-            local src = this.source
-            local srcUnit = core._roster[src]
+            if not pX then return end
+
+            local srcUnit, srcX, srcY = core:_getPosition(this.source)
 
             if not srcUnit then return end
-
-            -- TODO: Handle errors better
-            local srcX, srcY = core._positions[srcUnit][1], core._positions[srcUnit][2]
+            if not srcX then return end
 
             local distance = ((pY-srcY)^2+(pX-srcX)^2)^(1/2)
 
@@ -683,31 +725,41 @@ local diskPrototype = {
 setmetatable(diskPrototype, diskMT)
 local diskPrototypeMT = { __index = diskPrototype }
 
-function core:NewDisk(key, radius, source)
-    core._disks = core._disks or {}
+function core:_createDisk(src)
+      if not src then return end
 
-    local disk
+      local srcGUID = core:FindGUID(src)
 
-    if core._disks[key] then
-        disk = core._disks[key]
-    else
-        disk = CreateFrame("Frame", nil, core._frame)
-        disk.key = key
-        setmetatable(disk, diskPrototypeMT)
+      if not srcGUID then print("source not found") return end
 
-        disk:SetPoint("CENTER")
-        disk:SetFrameStrata("BACKGROUND")
+      local key = core:_genKey(srcGUID)
 
-        disk.texture = disk:CreateTexture(nil, "BACKGROUND", nil, 1)
-        disk.texture:SetAllPoints()
-        disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
-        disk.texture:SetVertexColor(1, 0, 0, 0.3)
+      core._disks = core._disks or {}
 
-        core._disks[key] = disk
-    end
+      local disk
 
-    disk:Hide()
-    return disk
+      if core._disks[key] then
+            disk = core._disks[key]
+      else
+            disk = CreateFrame("Frame", nil, core._frame)
+            disk.key = key
+            setmetatable(disk, diskPrototypeMT)
+
+            disk:SetPoint("CENTER")
+            disk:SetFrameStrata("BACKGROUND")
+
+            disk.texture = disk:CreateTexture(nil, "BACKGROUND", nil, 1)
+            disk.texture:SetAllPoints()
+            disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
+            disk.texture:SetVertexColor(1, 0, 0, 0.3)
+
+            core._disks[key] = disk
+      end
+
+      disk.source = srcGUID
+
+      disk:Hide()
+      return disk
 end
 
 ----------------------------------------------------
@@ -745,7 +797,7 @@ end
 
 function core:Disable()
       if core._enabled then
-            core:DisconnectAll()
+            core:DisconnectAllLines()
             core:DestroyAllDisks()
             core._enabled = false
       end
@@ -757,41 +809,47 @@ end
 
 function core:AddStatic(name, x, y)
       core._staticPoints = core._staticPoints or {}
+      core._roster = core._roster or {}
+      core._nameRoster = core._nameRoster or {}
+
+      core._roster[name] = name
+      core._nameRoster[name] = name
+      core._unitRoster[name] = name
+
       core._staticPoints[name] = core._staticPoints[name] or {}
       core._staticPoints[name][1] = x
       core._staticPoints[name][2] = y
 end
 
-function core:Connect(source, destination, width, extend, danger)
-      local key = core:_genKey(source, destination)
-      local line = core:_createLine(key)
+function core:Connect(src, dest, width, extend, danger)
+      width = width or core.config._lines._defaultWidth
+      extend = extend or core.constants.lines.extend.SEGMENT
+      danger = danger or core.constants.lines.danger.DANGER
 
-      line:Draw(source, destination, width, extend, danger)
-      return line
+      return core:_connect(src, dest, width, extend, danger)
 end
 
-function core:Disconnect(source, destination)
-      local key = core:_genKey(source, destination)
-      local line = core:_createLine(key)
-
+function core:Disconnect(src, dest)
+      local line = core:_createLine(src, dest)
       if not line then return end
-
-      line:Hide()
-      return line
+      line:Disconnect()
 end
 
-function core:DisconnectAll()
-      for key, line in pairs(core._lines) do
-            core:Disconnect(line.source, line.destination)
+function core:DisconnectAllLines()
+      for _, line in pairs(core._lines) do
+            line:Disconnect()
       end
 end
 
-function core:Disk(source, radius, danger)
-    local key = source
-    local disk = core:NewDisk(key)
-
-    disk:Draw(radius, source, danger)
+function core:Disk(src, radius, danger)
+    local disk = core:_createDisk(src)
+    disk:Draw(radius, danger)
     return disk
+end
+
+function core:RemoveDisk(src)
+    local disk = core:_createDisk(src)
+    disk:Destroy()
 end
 
 function core:DestroyAllDisks()

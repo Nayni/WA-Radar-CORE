@@ -15,7 +15,7 @@ local CUSTOM_DISPLAY = function()
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
       frame.background:SetAllPoints(frame)
-      frame.background:SetVertexColor(.3, .3, .3, 0.7)
+      frame.background:SetVertexColor(.3, .3, .3, 0.6)
 
       frame.arrow = frame.arrow or CreateFrame("Frame", nil, frame)
       frame.arrow:SetFrameStrata("HIGH")

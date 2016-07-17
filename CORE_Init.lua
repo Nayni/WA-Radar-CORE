@@ -257,10 +257,14 @@ end
 function core:FindGUID(src)
       if core._roster[src] then
             return src
-      elseif core._nameRoster[src] then
-            return core._nameRoster[src]
       elseif core._unitRoster[src] then
             return core._unitRoster[src]
+      end
+
+      -- before looking by name, remove any realm name
+      local name = string.gsub(src, "%-[^|]+", "")
+      if core._nameRoster[name] then
+            return core._nameRoster[name]
       else
             return nil
       end

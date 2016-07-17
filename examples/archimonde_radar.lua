@@ -60,8 +60,11 @@ local CUSTOM_TRIGGER = function(event, ...)
                   -- we can give WA_RADAR_CORE GUIDs and names, it will deal with it for you
                   -- a width of 4 is perfect for archimonde focused chaos beams
                   --
-                  -- EXTEND will extend the line on the destination, we want the line to be extended on the focused target
-                  -- so we pass wrought as the source, and focused as the destination and tell the radar to extend
+                  -- HALF will extend the line on the destination, we want the line to be extended on the focused target
+                  -- so we pass wrought as the source, and focused as the destination and tell the radar to extend half
+                  -- other options are:
+                  --    -EXTEND: Extends the line in both directions
+                  --    -SEGMENT: Keeps the line only between source and destination
                   local line = core:Connect(wrought, focused, 4, EXTEND)
                   -- keep the line ref, need it for later
                   aura_env.lines[focused] = line

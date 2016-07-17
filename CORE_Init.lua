@@ -95,6 +95,7 @@ core._nameRoster = {}
 core._unitRoster = {}
 
 core._staticPoints = {}
+core._blips = {}
 core._lines = {}
 core._disks = {}
 core._enabled = false
@@ -112,6 +113,17 @@ end
 ----------------------------------------------------
 -- BLIPS, aka the dots on the radar!
 ----------------------------------------------------
+local MARKER_TEXTURES = {
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_1.blp]], --star
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_2.blp]], --circle
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_3.blp]], --diamond
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_4.blp]], --triangle
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_5.blp]], --moon
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_6.blp]], --square
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_7.blp]], --cross
+      [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_8.blp]], --skull
+}
+
 local BLIP_TEX_COORDS = {
       ["WARRIOR"] = { 0, 0.125, 0, 0.25 },
       ["PALADIN"] = { 0.125, 0.25, 0, 0.25 },
@@ -127,43 +139,50 @@ local BLIP_TEX_COORDS = {
       ["DEMONHUNTER"] = { 0.375, 0.5, 0.25, 0.5 }
 }
 
-core._newBlip = {
-      __index = function(t, k)
-            if k == "player" then return end
+function core:_initBlip(unit, raidTargetIndex)
+      if UnitIsUnit(unit, "player") then return end
 
-            local blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. k, core._frame)
-            t[k] = blip
+      local blip
+
+      if core._blips[unit] then
+            blip = core._blips[unit]
+      else
+            blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. unit, core._frame)
+
             blip:SetPoint("CENTER")
             blip:SetFrameStrata("HIGH")
             blip:SetFrameLevel(1)
             blip:SetSize(22,22)
             blip.t = blip.t or blip:CreateTexture(nil, "BORDER", nil, 4)
             blip.t:SetAllPoints()
+
+            core._blips[unit] = blip
+      end
+
+      if raidTargetIndex and MARKER_TEXTURES[raidTargetIndex] then
+            blip:SetSize(28,28)
+            blip.t:SetTexture(MARKER_TEXTURES[raidTargetIndex])
+      else
             blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
             blip.t:SetTexCoord(.5, .625, .5, .75)
 
-            return blip
-      end
-}
-core._blips = setmetatable({}, core._newBlip)
+            local _, class = UnitClass(unit)
 
-function core:_initBlip(unit)
-      if UnitIsUnit(unit, "player") then
-            return
+            if BLIP_TEX_COORDS[class] then
+                  blip.t:SetTexCoord(unpack(BLIP_TEX_COORDS[class]))
+            else
+                  blip.t:SetTexCoord(.5, .625, .5, .75)
+            end
       end
 
-      local blip = core._blips[unit]
-      local _, class = UnitClass(unit)
 
-      if BLIP_TEX_COORDS[class] then
-            blip.t:SetTexCoord(unpack(BLIP_TEX_COORDS[class]))
-      else
-            blip.t:SetTexCoord(.5, .625, .5, .75)
-      end
+      return blip
 end
 
 function core:_updateBlip(unit)
       local blip = core._blips[unit]
+      if not blip then return end
+
       local p = core._positions[unit]
 
       local x, y, inRange = core:GetRadarPosition(p[1], p[2], p[3])
@@ -299,9 +318,9 @@ function core:_updateRoster()
     end
 
     -- Load static points into the roster
-    for name, coords in pairs(core._staticPoints) do
+    for name, pointCfg in pairs(core._staticPoints) do
         core._displayedUnits[name] = false
-        core:_initBlip(name)
+        core:_initBlip(name, pointCfg[3])
         core._roster[name] = name
         core._nameRoster[name] = name
         core._unitRoster[name] = name
@@ -817,7 +836,7 @@ function core:_createDisk(src, text)
       end
 
       disk.txt = disk.txt or disk:CreateFontString("WA_RADAR_RISK_TXT_" .. key, "ARTWORK", "GameFontNormalLarge")
-      disk.txt:SetPoint("CENTER", disk, "CENTER", 0, 15)
+      disk.txt:SetPoint("CENTER", disk, "CENTER", 0, 22)
       disk.txt:SetText(text or "")
 
       disk.source = srcGUID
@@ -873,25 +892,29 @@ function core:IsEnabled()
       return core._enabled
 end
 
-function core:Static(name, x, y)
+function core:Static(name, x, y, raidTargetIndex)
       core._staticPoints = core._staticPoints or {}
       core._roster = core._roster or {}
       core._nameRoster = core._nameRoster or {}
       core._unitRoster = core._unitRoster or {}
+
+      local unit, posX, posY, instanceID = core:_getPosition(x)
+
+      if not unit and not y then return end
 
       core._roster[name] = name
       core._nameRoster[name] = name
       core._unitRoster[name] = name
       core._staticPoints[name] = core._staticPoints[name] or {}
 
-      local unit, posX, posY, instanceID = core:_getPosition(x)
-
       if not posX then
             core._staticPoints[name][1] = x
             core._staticPoints[name][2] = y
+            core._staticPoints[name][3] = raidTargetIndex
       else
             core._staticPoints[name][1] = posX
             core._staticPoints[name][2] = posY
+            core._staticPoints[name][3] = y
       end
 end
 

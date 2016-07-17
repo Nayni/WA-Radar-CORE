@@ -123,7 +123,8 @@ local BLIP_TEX_COORDS = {
       ["MAGE"] = { 0.875, 1, 0, 0.25 },
       ["WARLOCK"] = { 0, 0.125, 0.25, 0.5 },
       ["DRUID"] = { 0.25, 0.375, 0.25, 0.5 },
-      ["MONK"] = { 0.125, 0.25, 0.25, 0.5 }
+      ["MONK"] = { 0.125, 0.25, 0.25, 0.5 },
+      ["DEMONHUNTER"] = { 0.375, 0.5, 0.25, 0.5 }
 }
 
 core._newBlip = {
@@ -784,7 +785,7 @@ local diskPrototype = {
 setmetatable(diskPrototype, diskMT)
 local diskPrototypeMT = { __index = diskPrototype }
 
-function core:_createDisk(src)
+function core:_createDisk(src, text)
       if not src then return end
 
       local srcGUID = core:FindGUID(src)
@@ -814,6 +815,10 @@ function core:_createDisk(src)
 
             core._disks[key] = disk
       end
+
+      disk.txt = disk.txt or disk:CreateFontString("WA_RADAR_RISK_TXT_" .. key, "ARTWORK", "GameFontNormalLarge")
+      disk.txt:SetPoint("CENTER", disk, "CENTER", 0, 15)
+      disk.txt:SetText(text or "")
 
       disk.source = srcGUID
 
@@ -930,8 +935,8 @@ function core:DisconnectAllLines()
       end
 end
 
-function core:Disk(src, radius, danger)
-    local disk = core:_createDisk(src)
+function core:Disk(src, radius, text, danger)
+    local disk = core:_createDisk(src, text)
     disk:Draw(radius, danger)
     return disk
 end

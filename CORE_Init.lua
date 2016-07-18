@@ -9,7 +9,6 @@
 -- They're used by the internal API and display only,
 -- Do not change or invoke these functions without having internal knownledge!
 ----------------------------------------------------
-
 local core = WA_RADAR_CORE or CreateFrame("Frame", "WA_RADAR_CORE", UIParent)
 core:Hide()
 
@@ -25,6 +24,10 @@ core.config = {
 
       _lines = {
             _defaultWidth = 4
+      },
+
+      _disks = {
+            _defaultRadius = 20
       }
 }
 
@@ -62,6 +65,15 @@ local function GetUnitPosition(unitID)
 
       return posX, posY, instanceID
 end
+
+----------------------------------------------------
+-- DEBUGGING / LOGGING
+----------------------------------------------------
+local function warn(message, ...)
+      local msg = string.format(message, ...)
+      print("|cFF9999FF" .. "RADAR-CORE: " .. "|r" ..  "|cFFFF3333" .. msg .. "|r")
+end
+
 
 ----------------------------------------------------
 -- INITIAL SETUP
@@ -164,7 +176,6 @@ function core:_initBlip(unit, raidTargetIndex)
             blip.t:SetTexture(MARKER_TEXTURES[raidTargetIndex])
       else
             blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
-            blip.t:SetTexCoord(.5, .625, .5, .75)
 
             local _, class = UnitClass(unit)
 
@@ -274,12 +285,12 @@ function core:_updatePositions()
       core._positions.player = core._positions.player or {}
       core._positions.player[1], core._positions.player[2], core._positions.player[3] = GetUnitPosition("player")
 
-      for unit in pairs(core._displayedUnits) do
+      for unit in pairs(core._roster) do
             core._positions[unit] = core._positions[unit] or {}
 
             local x, y, instanceID = GetUnitPosition(unit)
 
-            if not x then
+            if (not x) and core._staticPoints[unit] then
                   x, y, instanceID = core._staticPoints[unit][1], core._staticPoints[unit][2], core._positions.player[3]
             end
 
@@ -289,53 +300,72 @@ function core:_updatePositions()
       end
 end
 
+function core:_addToRoster(unit, isStatic)
+      local guid, name;
+
+      if isStatic then
+            guid = unit
+            name = unit
+      else
+            guid = UnitGUID(unit)
+            name = UnitName(unit)
+      end
+
+      core._roster[guid] = unit
+      core._nameRoster[name] = guid
+      core._unitRoster[unit] = guid
+end
+
 function core:_updateRoster()
-    wipe(core._roster)
-    wipe(core._positions)
-    wipe(core._displayedUnits)
+      wipe(core._roster)
+      wipe(core._positions)
+      wipe(core._displayedUnits)
+      wipe(core._nameRoster)
+      wipe(core._unitRoster)
 
-    -- Load player into the roster
-    local playerGUID = UnitGUID("player")
-    local playerName = UnitName("player")
-    core._roster[playerGUID] = "player"
-    core._nameRoster[playerName] = playerGUID
-    core._unitRoster["player"] = playerGUID
+      -- Load player into the roster
+      core:_addToRoster("player")
 
-    -- Load raid into the roster
-    if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local unit = WeakAuras.raidUnits[i]
+      -- Load party/raid into the roster
+      if IsInRaid() then
+            for i = 1, GetNumGroupMembers() do
+                  local unit = WeakAuras.raidUnits[i]
 
-            if UnitIsUnit(unit, "player") then
-                unit = "player"
-            elseif ( UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) ) then
-                core._displayedUnits[unit] = false
-                core:_initBlip(unit)
+                  if UnitIsUnit(unit, "player") then
+                        unit = "player"
+                  elseif ( UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) ) then
+                        core._displayedUnits[unit] = false
+                        core:_initBlip(unit)
+                  end
+
+                  core:_addToRoster(unit)
             end
+      elseif IsInGroup() then
+            for i = 1, GetNumGroupMembers() do
+                  local unit = WeakAuras.partyUnits[i]
 
-            local unitGUID = UnitGUID(unit)
-            local unitName = UnitName(unit)
-            core._roster[unitGUID] = unit
-            core._nameRoster[unitName] = unitGUID
-            core._unitRoster[unit] = unitGUID
-        end
-    end
+                  if ( UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) ) then
+                        core._displayedUnits[unit] = false
+                        core:_initBlip(unit)
+                  end
 
-    -- Load static points into the roster
-    for name, pointCfg in pairs(core._staticPoints) do
-        core._displayedUnits[name] = false
-        core:_initBlip(name, pointCfg[3])
-        core._roster[name] = name
-        core._nameRoster[name] = name
-        core._unitRoster[name] = name
-    end
+                  core:_addToRoster(unit)
+            end
+      end
 
-    -- Hide all blips if they shouldn't be displayed
-    for unit, blip in pairs(core._blips) do
-        if core._displayedUnits[unit] == nil then
-            blip:Hide()
-        end
-    end
+      -- Load static points into the roster
+      for name, point in pairs(core._staticPoints) do
+            core._displayedUnits[name] = false
+            core:_initBlip(name, point[3])
+            core:_addToRoster(name, true)
+      end
+
+      -- Hide all blips if they shouldn't be displayed
+      for unit, blip in pairs(core._blips) do
+            if core._displayedUnits[unit] == nil then
+                  blip:Hide()
+            end
+      end
 end
 
 ----------------------------------------------------
@@ -622,14 +652,27 @@ setmetatable(linePrototype, lineMT)
 local linePrototypeMT = { __index = linePrototype }
 
 function core:_createLine(src, dest)
-      if not src then return end
-      if not dest then return end
+      if not src then
+            warn("unable to create line without source")
+            return
+      end
+      if not dest then
+            warn("unable to create line without destination")
+            return
+      end
 
       local srcGUID = core:FindGUID(src)
       local destGUID = core:FindGUID(dest)
 
-      if not srcGUID then print("source not found") return end
-      if not destGUID then print("destination not found") return end
+      if not srcGUID then
+            warn("guid lookup failed for %s", src)
+            return
+      end
+
+      if not destGUID then
+            warn("guid lookup failed for %s", dest)
+            return
+      end
 
       local key = core:_genKey(srcGUID, destGUID)
 
@@ -809,11 +852,17 @@ setmetatable(diskPrototype, diskMT)
 local diskPrototypeMT = { __index = diskPrototype }
 
 function core:_createDisk(src, text)
-      if not src then return end
+      if not src then
+            warn("unable to create disk without source")
+            return
+      end
 
       local srcGUID = core:FindGUID(src)
 
-      if not srcGUID then print("source not found") return end
+      if not srcGUID then
+            warn("guid lookup failed for %s", src)
+            return
+      end
 
       local key = core:_genKey(srcGUID)
 
@@ -880,6 +929,7 @@ function core:Enable()
       core:_updater()
 
       core._enabled = true
+      warn("Radar enabled successfully!")
 end
 
 function core:Disable()
@@ -889,6 +939,7 @@ function core:Disable()
             core:RemoveAllStatic()
             core:_hideAllBlips()
             core._enabled = false
+            warn("Radar disabled successfully!")
       end
 end
 
@@ -897,6 +948,11 @@ function core:IsEnabled()
 end
 
 function core:Static(name, x, y, raidTargetIndex)
+      if not name then
+            warn("unable to create static without a name")
+            return
+      end
+
       core._staticPoints = core._staticPoints or {}
       core._roster = core._roster or {}
       core._nameRoster = core._nameRoster or {}
@@ -904,7 +960,10 @@ function core:Static(name, x, y, raidTargetIndex)
 
       local unit, posX, posY, instanceID = core:_getPosition(x)
 
-      if not unit and not y then return end
+      if not unit and not y then
+            warn("unable to create static for %s, specifiy a y-coordinate.", name)
+            return
+      end
 
       core._roster[name] = name
       core._nameRoster[name] = name
@@ -923,6 +982,11 @@ function core:Static(name, x, y, raidTargetIndex)
 end
 
 function core:RemoveStatic(name)
+      if not name then
+            warn("unable to remove static without a name")
+            return
+      end
+
       core._staticPoints = core._staticPoints or {}
       core._roster = core._roster or {}
       core._nameRoster = core._nameRoster or {}
@@ -943,6 +1007,16 @@ function core:RemoveAllStatic()
 end
 
 function core:Connect(src, dest, width, extend, danger)
+      if not src then
+            warn("unable to connect without a source")
+            return
+      end
+
+      if not dest then
+            warn("unable to connect without a destination")
+            return
+      end
+
       width = width or core.config._lines._defaultWidth
       extend = extend or core.constants.lines.extend.SEGMENT
       danger = danger or core.constants.lines.danger.DANGER
@@ -951,6 +1025,16 @@ function core:Connect(src, dest, width, extend, danger)
 end
 
 function core:Disconnect(src, dest)
+      if not src then
+            warn("unable to disconnect without a source")
+            return
+      end
+
+      if not dest then
+            warn("unable to disconnect without a destination")
+            return
+      end
+
       local line = core:_createLine(src, dest)
       if not line then return end
       line:Disconnect()
@@ -963,18 +1047,31 @@ function core:DisconnectAllLines()
 end
 
 function core:Disk(src, radius, text, danger)
-    local disk = core:_createDisk(src, text)
-    disk:Draw(radius, danger)
-    return disk
+      if not src then
+            warn("unable to create a disk without a source")
+            return
+      end
+
+      radius = radius or core.config._disks._defaultRadius
+      danger = danger or core.constants.disks.danger.DANGER
+
+      local disk = core:_createDisk(src, text)
+      disk:Draw(radius, danger)
+      return disk
 end
 
 function core:RemoveDisk(src)
-    local disk = core:_createDisk(src)
-    disk:Destroy()
+      if not src then
+            warn("unable to remove a disk without a source")
+            return
+      end
+
+      local disk = core:_createDisk(src)
+      disk:Destroy()
 end
 
 function core:DestroyAllDisks()
-    for key, disk in pairs(core._disks) do
-        disk:Destroy()
-    end
+      for key, disk in pairs(core._disks) do
+            disk:Destroy()
+      end
 end

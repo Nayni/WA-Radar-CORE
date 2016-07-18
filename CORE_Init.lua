@@ -1,20 +1,24 @@
-----------------------------------------------------
--- WeakAuras Radar CORE module
---
--- All variables in this file, either local or part of the core module starting with an underscore (_)
--- are supposed to be private variables,
--- editing these variables without internal knownledge might cause the radar to malfunction!
---
--- Just like variables, all functions starting with an underscore (_) are ment as private functions
--- They're used by the internal API and display only,
--- Do not change or invoke these functions without having internal knownledge!
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      WeakAuras Radar CORE module
+
+      All variables in this file, either local or part of the core module starting with an underscore (_)
+      are supposed to be private variables,
+      editing these variables without internal knownledge might cause the radar to malfunction!
+
+      Just like variables, all functions starting with an underscore (_) are ment as private functions
+      They're used by the internal API and display only,
+      Do not change or invoke these functions without having internal knownledge!
+#######################################################################################################################
+]]
 local core = WA_RADAR_CORE or CreateFrame("Frame", "WA_RADAR_CORE", UIParent)
 core:Hide()
 
-----------------------------------------------------
--- CONFIGURATION, Edit values with care
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      CONFIG
+#######################################################################################################################
+]]
 core.config = {
       -- The maximum range you will see on the radar, anything further then this won't be visible.
       -- This can be seen as "zoom", measured in in-game yards.
@@ -31,9 +35,11 @@ core.config = {
       }
 }
 
-----------------------------------------------------
--- CONSTANTS
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      CONSTANTS
+#######################################################################################################################
+]]
 core.constants = {
       lines = {
             extend = {
@@ -56,28 +62,33 @@ core.constants = {
       }
 }
 
-----------------------------------------------------
--- GetUnitPosition function fix
--- Fixing the blizzard API function to return with X, Y, instanceID
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      BLIZZARD FIXES
+#######################################################################################################################
+]]
 local function GetUnitPosition(unitID)
       local posY, posX, _, instanceID = UnitPosition(unitID)
 
       return posX, posY, instanceID
 end
 
-----------------------------------------------------
--- DEBUGGING / LOGGING
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      DEBUGGING
+#######################################################################################################################
+]]
 local function warn(message, ...)
       local msg = string.format(message, ...)
       print("|cFF9999FF" .. "RADAR-CORE: " .. "|r" ..  "|cFFFF3333" .. msg .. "|r")
 end
 
 
-----------------------------------------------------
--- INITIAL SETUP
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      INITIAL SETUP
+#######################################################################################################################
+]]
 core._defaultWidth = 480
 core._range = core._defaultWidth / 2
 core._range2 = core._range * core._range
@@ -113,18 +124,22 @@ core._disks = {}
 core._enabled = false
 core._frame = CreateFrame("Frame", nil, UIParent)
 
-----------------------------------------------------
--- SCALING
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      SCALING
+#######################################################################################################################
+]]
 function core:_updateScale(width)
       core._range = width / 2
       core._range2 = core._range * core._range
       core._scale = core._range / core.config.maxRange
 end
 
-----------------------------------------------------
--- BLIPS, aka the dots on the radar!
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      BLIPS
+#######################################################################################################################
+]]
 local MARKER_TEXTURES = {
       [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_1.blp]], --star
       [[Interface\TARGETINGFRAME\UI-RaidTargetingIcon_2.blp]], --circle
@@ -220,10 +235,11 @@ function core:_hideAllBlips()
       core._displayedUnits = {}
 end
 
-----------------------------------------------------
--- POSITIONING AND ROSTER
-----------------------------------------------------
-
+--[[
+#######################################################################################################################
+      ROSTER AND POSITIONS
+#######################################################################################################################
+]]
 function core:GetRadarPosition(x, y, instanceID)
       local posX, posY, instanceID = x, y, instanceID
 
@@ -243,26 +259,31 @@ end
 
 function core:_getRadarPosition(src)
       if not src then return end
-      local srcGUID = core:FindGUID(src)
-      if not srcGUID then return end
-      local unit = core._roster[srcGUID]
+      local unitID = core:FindUnitID(src)
+      if not unitID then return end
 
-      if not unit then return end
-      if not core._radarPositions[unit] then return end
+      local p = core._radarPositions[unitID]
 
-      return unit, core._radarPositions[unit][1], core._radarPositions[unit][2], core._radarPositions[unit][3]
+      if p then
+            return unitID, p[1], p[2], p[3]
+      else
+            return nil
+      end
 end
 
 function core:_getPosition(src)
       if not src then return end
-      local srcGUID = core:FindGUID(src)
-      if not srcGUID then return end
-      local unit = core._roster[srcGUID]
+      local unitID = core:FindUnitID(src)
+      if not unitID then return end
 
-      if not unit then return end
-      if not core._positions[unit] then return end
+      local p = core._positions[unitID]
 
-      return unit, core._positions[unit][1], core._positions[unit][2], core._positions[unit][3]
+      if p then
+            return unitID, p[1], p[2], p[3]
+      else
+            local x, y, instanceID = GetUnitPosition(unitID)
+            return unitID, x, y, instanceID
+      end
 end
 
 function core:FindGUID(src)
@@ -276,6 +297,16 @@ function core:FindGUID(src)
       local name = string.gsub(src, "%-[^|]+", "")
       if core._nameRoster[name] then
             return core._nameRoster[name]
+      else
+            return nil
+      end
+end
+
+function core:FindUnitID(src)
+      local guid = core:FindGUID(src)
+
+      if guid then
+            return core._roster[guid]
       else
             return nil
       end
@@ -297,6 +328,14 @@ function core:_updatePositions()
             core._positions[unit][1] = x
             core._positions[unit][2] = y
             core._positions[unit][3] = instanceID
+      end
+end
+
+function core:_isStatic(unit)
+      if core._staticPoints[unit] then
+            return true
+      else
+            return false
       end
 end
 
@@ -368,9 +407,11 @@ function core:_updateRoster()
       end
 end
 
-----------------------------------------------------
--- LINES
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      LINES
+#######################################################################################################################
+]]
 local linePrototypeDummyFrame = CreateFrame("Frame")
 local lineMT = { __index = linePrototypeDummyFrame }
 
@@ -723,9 +764,11 @@ function core:_connect(src, dest, width, extend, danger)
       return line
 end
 
-----------------------------------------------------
--- DISKS
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      DISKS
+#######################################################################################################################
+]]
 function core:_diskUpdater(disk)
       if not disk then return end
       if not disk.shown then
@@ -898,9 +941,11 @@ function core:_createDisk(src, text)
       return disk
 end
 
-----------------------------------------------------
--- DISPLAY UPDATER
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      DISPLAY UPDATING
+#######################################################################################################################
+]]
 function core:_updater()
       core._facing = GetPlayerFacing()
       core._sin = math.sin(core._facing)
@@ -914,13 +959,20 @@ function core:_updater()
       end
 
       for key, disk in pairs(core._disks) do
-          core:_diskUpdater(disk)
+            core:_diskUpdater(disk)
       end
 end
 
-----------------------------------------------------
--- PUBLIC API
-----------------------------------------------------
+--[[
+#######################################################################################################################
+      PUBLIC API
+#######################################################################################################################
+]]
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Enables the core module.
+-- @return : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:Enable()
       if core._enabled then return end
 
@@ -932,6 +984,10 @@ function core:Enable()
       warn("Radar enabled successfully!")
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Disables the core module.
+-- @return : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:Disable()
       if core._enabled then
             core:DisconnectAllLines()
@@ -943,10 +999,26 @@ function core:Disable()
       end
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Indicates wether the core module is enabled.
+-- @returns : true if core module is enabled, false otherwise
+-----------------------------------------------------------------------------------------------------------------------
 function core:IsEnabled()
-      return core._enabled
+      if core._enabled then
+            return true
+      else
+            return false
+      end
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Creates a static point on the radar.
+-- @param name            : name of the static point, must be unique
+-- @param x               : x-coordinate of the static point, or the reference of a known unit to use as position
+-- @param y               : y-coordiante of the static point, or the raidTargetIndex if parameter x is a reference
+-- @param raidTargetIndex : optional raidTargetIndex to use for the static point
+-- @return                : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:Static(name, x, y, raidTargetIndex)
       if not name then
             warn("unable to create static without a name")
@@ -981,6 +1053,11 @@ function core:Static(name, x, y, raidTargetIndex)
       end
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Removes a static point on the radar.
+-- @param name : name of the static point
+-- @return     : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:RemoveStatic(name)
       if not name then
             warn("unable to remove static without a name")
@@ -998,6 +1075,10 @@ function core:RemoveStatic(name)
       core._staticPoints[name] = nil
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Removes all static points on the radar.
+-- @return : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:RemoveAllStatic()
       core._staticPoints = core._staticPoints or {}
 
@@ -1006,6 +1087,15 @@ function core:RemoveAllStatic()
       end
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Connects a given source and destination on the radar.
+-- @param src               : unit reference of the source, can be unitID, guid, name
+-- @param dest              : unit reference of the destination, can be unitID, guid, name
+-- @param width (optional)  : width of the line
+-- @param extend (optional) : extend mode of the line, see constants for explanation
+-- @param danger (optional) : danger mode of the line, see constants for explanation
+-- @return                  : An instance of the line
+-----------------------------------------------------------------------------------------------------------------------
 function core:Connect(src, dest, width, extend, danger)
       if not src then
             warn("unable to connect without a source")
@@ -1024,6 +1114,12 @@ function core:Connect(src, dest, width, extend, danger)
       return core:_connect(src, dest, width, extend, danger)
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Disconnects the line for a given source and destination.
+-- @param src : unit reference of the source, can be unitID, guid, name
+-- @param des : unit reference of the destination, can be unitID, guid, name
+-- @return    : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:Disconnect(src, dest)
       if not src then
             warn("unable to disconnect without a source")
@@ -1040,12 +1136,24 @@ function core:Disconnect(src, dest)
       line:Disconnect()
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Disconnects all active lines on the radar.
+-- @return : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:DisconnectAllLines()
       for _, line in pairs(core._lines) do
             line:Disconnect()
       end
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Places a disk on the radar at the source.
+-- @param src               : unit reference of the source, can be unitID, guid, name
+-- @param radius            : radius of the disk, in in-game yards
+-- @param text (optional)   : text to place on the disk
+-- @param danger (optional) : danger mode of the disk, see constants for explanation
+-- @return                  : An instance of the disk
+-----------------------------------------------------------------------------------------------------------------------
 function core:Disk(src, radius, text, danger)
       if not src then
             warn("unable to create a disk without a source")
@@ -1060,6 +1168,11 @@ function core:Disk(src, radius, text, danger)
       return disk
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Removes the disk on the radar at the source.
+-- @param src : unit reference of the source, can be unitID, guid, name
+-- @return    : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:RemoveDisk(src)
       if not src then
             warn("unable to remove a disk without a source")
@@ -1070,8 +1183,81 @@ function core:RemoveDisk(src)
       disk:Destroy()
 end
 
+-----------------------------------------------------------------------------------------------------------------------
+-- Destroys all the active disks on the radar.
+-- @return : void
+-----------------------------------------------------------------------------------------------------------------------
 function core:DestroyAllDisks()
       for key, disk in pairs(core._disks) do
             disk:Destroy()
       end
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Calculates the distance between two unit references
+-- @param unit1 : unit reference of the first unit, can be unitID, guid, name
+-- @param unit2 : unit reference of the second unit, can be unitID, guid, name
+-- @return      : the distance between the two units
+-----------------------------------------------------------------------------------------------------------------------
+function core:Distance(unit1, unit2)
+      local u1, x1, y1, map1 = core:_getPosition(unit1)
+      local u2, x2, y2, map2 = core:_getPosition(unit2)
+
+      if (not u1) or (not u2) or (map1 ~= map2) then
+            return 0
+      else
+            local dx, dy = x2 - x1, y2 - y1
+            return math.sqrt(dx * dx + dy * dy)
+      end
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Determines if a unit is in range of "me", where "me" is the current player.
+-- @param unit  : unit reference of the unit, can be unitID, guid, name
+-- @param range : the range to check for, in yards
+-- @return      : true if the unit is in range of "me", false otherwise
+-----------------------------------------------------------------------------------------------------------------------
+function core:IsInRange(unit, range)
+      local d = core:Distance("player", unit)
+
+      if d and d <= range then
+            return true
+      else
+            return false
+      end
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Returns an array of unitIDs with all party/raid members who are in range of the specified unit
+-- @param unit  : unit reference of the unit, can be unitID, guid, name
+-- @param range : the range to check for, in yards
+-- @return      : an array of unitIDs
+-----------------------------------------------------------------------------------------------------------------------
+function core:GetInRangeMembers(unit, range)
+      if not unitRef then return end
+      if not range then return end
+
+      local members = {}
+      for u, _ in pairs(core._roster) do
+            local unitIsStatic = core:_isStatic(u)
+            if not unitIsStatic then
+                  local d = core:Distance(unit, u)
+                  if d and d <= range then
+                        table.insert(u, members)
+                  end
+            end
+      end
+
+      return members
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Returns the total count of party/raid members who are in range of the specified unit
+-- @param unit  : unit reference of the unit, can be unitID, guid, name
+-- @param range : the range to check for, in yards
+-- @return      : total count of party/raid members in range of the specified unit
+-----------------------------------------------------------------------------------------------------------------------
+function core:GetInRangeCount(unit, range)
+      local members = core:GetInRangeMembers(unit, range)
+      return table.getn(members)
 end

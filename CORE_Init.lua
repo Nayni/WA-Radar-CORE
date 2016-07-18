@@ -9,6 +9,8 @@
       Just like variables, all functions starting with an underscore (_) are ment as private functions
       They're used by the internal API and display only,
       Do not change or invoke these functions without having internal knownledge!
+
+      Scroll down to the public api section (bottom) to see what's ment as api for external use.
 #######################################################################################################################
 ]]
 local core = WA_RADAR_CORE or CreateFrame("Frame", "WA_RADAR_CORE", UIParent)
@@ -42,11 +44,19 @@ core.config = {
 ]]
 core.constants = {
       lines = {
+            -- Lines have 3 different what we call "extend-modes"
+            --    -SEGMENT : the line is drawn between the source and destination only,
+            --    -HALF    : the line is drawn between the source and destination and extended beyond the destination,
+            --    -EXTEND  : the lins is drawn between the source and destination and extended both ways
             extend = {
                   SEGMENT = 0,
                   HALF = 1,
                   EXTEND = 2
             },
+            -- Lines have 3 different what we call "danger-modes"
+            --    -DANGER   : the line indicates danger, standing on it is bad,
+            --    -NEUTRAL  : the line is neutral, standing on it or not doesn't matter,
+            --    -FRIENDLY : the line is friendly, you must stand on it
             danger = {
                   DANGER = 0,
                   NEUTRAL = 1,
@@ -54,6 +64,10 @@ core.constants = {
             }
       },
       disks = {
+            -- Disks have 3 different what we call "danger-modes"
+            --    -DANGER   : the disk indicates danger, standing in it is bad,
+            --    -NEUTRAL  : the disk is neutral, standing in it or not doesn't matter,
+            --    -FRIENDLY : the disk is friendly, you must stand in it
             danger = {
                   DANGER = 0,
                   NEUTRAL = 1,

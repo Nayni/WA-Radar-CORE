@@ -43,7 +43,6 @@ core:Connect("player", "Bob", 10)
 -- meaning that the line will be drawn between the two players and won't be extended.
 -- You are able to override this by supplying different 'extend modes'.
 -- Read more about extend modes in the Init function of CORE.
-
 local EXTEND = core.constants.lines.extend.EXTEND -- will extend the line both ways
 core:Connect("player", "Bob", 4, EXTEND)
 

@@ -104,6 +104,7 @@ core:DestroyAllDisks()
 
 ### Static points
 Radar CORE has a way to add points on the radar, these points are static and can be added/removed at any time.
+
 **Static points have the exact same behaviour as members on the radar, you can connect them or place disks on them!**
 
 ```lua

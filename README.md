@@ -85,7 +85,7 @@ core:Disk("player", 30)
 core:Disk("player", 30, "Shackle 1")
 
 -- By default CORE sees a disk as a dangerous zone,
--- meaning that standing on in the radius of the disk will indicate you are in danger,
+-- meaning that standing in the radius of the disk will indicate you are in danger,
 -- to turn this around you can pass different 'danger modes'.
 -- Read more about 'danger modes' in the Init function of CORE.
 local FRIENDLY = core.constants.disks.danger.FRIENDLY -- will classify the disk area as friendly
@@ -104,7 +104,7 @@ core:DestroyAllDisks()
 
 ### Static points
 Radar CORE has a way to add points on the radar, these points are static and can be added/removed at any time.
-*Static points have the exact same behaviour as members on the radar, you can connect them or place disks on them!*
+**Static points have the exact same behaviour as members on the radar, you can connect them or place disks on them!**
 
 ```lua
 -- Grab the global, always check for existence!

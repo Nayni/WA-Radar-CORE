@@ -333,15 +333,15 @@ function core:_updatePositions()
       for unit in pairs(core._roster) do
             core._positions[unit] = core._positions[unit] or {}
 
-            local x, y, instanceID = GetUnitPosition(unit)
+            local x, y, map = GetUnitPosition(unit)
 
             if (not x) and core._staticPoints[unit] then
-                  x, y, instanceID = core._staticPoints[unit][1], core._staticPoints[unit][2], core._positions.player[3]
+                  x, y, map = core._staticPoints[unit][1], core._staticPoints[unit][2], core._positions.player[3]
             end
 
             core._positions[unit][1] = x
             core._positions[unit][2] = y
-            core._positions[unit][3] = instanceID
+            core._positions[unit][3] = map
       end
 end
 
@@ -884,16 +884,15 @@ local diskPrototype = {
             local r1, g1, b1, a1 = this:_getDangerColor(danger)
             local r2, g2, b2, a2 = this:_getDangerColor(danger2)
 
-            local _, pX, pY = core:_getPosition("player")
+            local _, px, py = core:_getPosition("player")
 
-            if not pX then return end
+            local su, sx, sy = core:_getPosition(this.source)
 
-            local srcUnit, srcX, srcY = core:_getPosition(this.source)
+            if not px then return end
+            if not sx then return end
 
-            if not srcUnit then return end
-            if not srcX then return end
-
-            local distance = ((pY-srcY)^2+(pX-srcX)^2)^(1/2)
+            local dx, dy = px - sx, py - sy
+            local distance = math.sqrt(dx * dx + dy * dy)
 
             if distance < this.radius then
                   this:Color(r1,g1,b1,a1)
@@ -1248,7 +1247,7 @@ end
 -- @return      : an array of unitIDs
 -----------------------------------------------------------------------------------------------------------------------
 function core:GetInRangeMembers(unit, range)
-      if not unitRef then return end
+      if not unit then return end
       if not range then return end
 
       local members = {}

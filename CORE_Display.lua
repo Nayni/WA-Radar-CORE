@@ -12,14 +12,27 @@ local CUSTOM_DISPLAY = function()
 
       core:_updateScale(width)
 
+      -- frame.border = frame.border or frame:CreateTexture(nil, "BACKGROUND")
+      -- frame.border:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
+      -- frame.border:SetPoint("TOPLEFT", -10, 10)
+      -- frame.border:SetPoint("BOTTOMRIGHT", 10, -10)
+      -- frame.border:SetVertexColor(0, 0, 0, 0.3)
+
+      frame.border = frame.border or frame:CreateTexture(nil, "BACKGROUND")
+      frame.border:SetTexture("Interface\\Minimap\\UI-MINIMAP-BORDER")
+      frame.border:SetPoint("TOPLEFT", -10, 10)
+      frame.border:SetPoint("BOTTOMRIGHT", 10, -10)
+      frame.border:SetTexCoord(.5, 0, 0, 0.5)
+      --frame.border:SetVertexColor(0, 0, 0, 1)
+
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
-      frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
+      frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_Smooth_Border")
       frame.background:SetAllPoints(frame)
 
       if core._inDangerLine or core._inDangerDisk then
-            frame.background:SetVertexColor(.4, .3, .3, 0.6)
+            frame.background:SetVertexColor(.6, .3, .3, 0.7)
       else
-            frame.background:SetVertexColor(.3, .3, .3, 0.6)
+            frame.background:SetVertexColor(.3, .3, .3, 0.7)
       end
 
       frame.arrow = frame.arrow or CreateFrame("Frame", nil, frame)

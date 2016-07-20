@@ -191,13 +191,11 @@ function core:_initBlip(unit, raidTargetIndex)
             blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. unit, core._frame)
 
             blip:SetPoint("CENTER")
-            blip:SetFrameStrata("HIGH")
-            blip:SetFrameLevel(1)
+            blip:SetFrameStrata("DIALOG")
+            blip:SetFrameLevel(5)
             blip:SetSize(22,22)
-            blip.t = blip.t or blip:CreateTexture(nil, "BORDER", nil, 4)
+            blip.t = blip.t or blip:CreateTexture(nil, "BORDER", nil)
             blip.t:SetAllPoints()
-
-            core._blips[unit] = blip
       end
 
       if raidTargetIndex and MARKER_TEXTURES[raidTargetIndex] then
@@ -215,6 +213,7 @@ function core:_initBlip(unit, raidTargetIndex)
             end
       end
 
+      core._blips[unit] = blip
 
       return blip
 end
@@ -223,9 +222,11 @@ function core:_updateBlip(unit)
       local blip = core._blips[unit]
       if not blip then return end
 
-      local p = core._positions[unit]
+      local u, ux, uy, map = core:_getPosition(unit)
 
-      local x, y, inRange = core:GetRadarPosition(p[1], p[2], p[3])
+      if not ux then return end
+
+      local x, y, inRange = core:GetRadarPosition(ux, uy, map)
 
       core._radarPositions[unit] = core._radarPositions[unit] or {}
       core._radarPositions[unit][1] = x
@@ -967,7 +968,7 @@ function core:_updater()
       core:_updateRoster()
       core:_updatePositions()
 
-      for unit in pairs(core._displayedUnits) do
+      for _, unit in pairs(core._roster) do
             core:_updateBlip(unit)
       end
 
@@ -1042,11 +1043,12 @@ function core:Static(name, x, y, raidTargetIndex)
       core._roster = core._roster or {}
       core._nameRoster = core._nameRoster or {}
       core._unitRoster = core._unitRoster or {}
+      core._displayedUnits = core._displayedUnits or {}
 
       local unit, posX, posY, instanceID = core:_getPosition(x)
 
-      if not unit and not y then
-            warn("unable to create static for %s, specifiy a y-coordinate.", name)
+      if not unit and ((not y) or type(x) ~= "number" ) then
+            warn("unable to create static for %s, specifiy the correct x and y-coordinates.", name)
             return
       end
 
@@ -1054,6 +1056,7 @@ function core:Static(name, x, y, raidTargetIndex)
       core._nameRoster[name] = name
       core._unitRoster[name] = name
       core._staticPoints[name] = core._staticPoints[name] or {}
+      core._displayedUnits[name] = false
 
       if not posX then
             core._staticPoints[name][1] = x
@@ -1177,6 +1180,12 @@ function core:Disk(src, radius, text, danger)
       danger = danger or core.constants.disks.danger.DANGER
 
       local disk = core:_createDisk(src, text)
+
+      if not disk then
+            warn("disk could not be created")
+            return
+      end
+
       disk:Draw(radius, danger)
       return disk
 end

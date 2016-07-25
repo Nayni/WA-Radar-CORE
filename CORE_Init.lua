@@ -395,7 +395,7 @@ function core:_updateRoster()
                   core:_addToRoster(unit)
             end
       elseif IsInGroup() then
-            for i = 1, GetNumGroupMembers() do
+            for i = 1, GetNumGroupMembers() - 1 do
                   local unit = WeakAuras.partyUnits[i]
 
                   if ( UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) ) then

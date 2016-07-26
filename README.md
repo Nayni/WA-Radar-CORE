@@ -30,10 +30,6 @@ core:Disable()
 Radar CORE is able to connect (or disconnect) lines between members tracked on the radar.
 
 ```lua
--- Grab the global, always check for existence!
-local core = WA_RADAR_CORE
-if not core then return end
-
 -- Radar CORE holds an internal map of all player references,
 -- you can pass CORE a unitID, unitGUID or unitName as long as it is a member of the group CORE knows who it is.
 core:Connect("player", "Bob")
@@ -67,10 +63,6 @@ core:DisconnectAllLines()
 Radar CORE is also able to place what's called Disks on members. A disk is an area with a given radius around a member.
 
 ```lua
--- Grab the global, always check for existence!
-local core = WA_RADAR_CORE
-if not core then return end
-
 -- Similar to the lines API you can pass any unit reference to CORE
 
 -- Create a default disk on yourself:
@@ -108,10 +100,6 @@ Radar CORE has a way to add points on the radar, these points are, as the name d
 **Static points have the exact same behaviour as members on the radar, you can connect them or place disks on them!**
 
 ```lua
--- Grab the global, always check for existence!
-local core = WA_RADAR_CORE
-if not core then return end
-
 -- A static point can be created using x and y coordinates and by supplying a name, the name has to be unique!
 core:Static("my_new_static", 4450, 3530)
 
@@ -133,15 +121,11 @@ core:Static("my_personal_static", "player", star)
 Radar CORE also offers some utility functions that can be used at any time.
 
 ```lua
--- Grab the global, always check for existence!
-local core = WA_RADAR_CORE
-if not core then return end
-
 -- Calculate the distance between two units (can also be static points)
 core:Distance("player", "Bob")
 -- output: 60.050
 
--- Check if Bob in a range of 20 yards of yourself
+-- Check if Bob is in a range of 20 yards of yourself
 core:IsInRange("Bob", 20)
 -- output: true/false
 

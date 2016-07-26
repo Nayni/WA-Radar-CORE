@@ -41,13 +41,15 @@ core:Connect("player", "Bob")
 -- By default a width of 4 is used, if you want a bigger line, you are free to adjust the width
 core:Connect("player", "Bob", 10)
 
--- By default CORE will draw a line segment meaning that the line will be drawn between the two players and won't be extended.
--- You are able to override this by supplying different 'extend modes'. Read more about extend modes in the Init function of CORE.
+-- By default CORE will draw a line segment. The line will be drawn between the two players and won't be extended.
+-- You are able to override this by supplying different 'extend modes'.
+-- See the CORE_Init.lua for more info.
 local EXTEND = core.constants.lines.extend.EXTEND -- will extend the line both ways
 core:Connect("player", "Bob", 4, EXTEND)
 
--- By default CORE sees a line as a dangerous thing meaning that standing on the line that's drawn will indicate you are in danger.
--- To turn this around you can pass different 'danger modes'. Read more about 'danger modes' in the Init function of CORE.
+-- By default CORE sees a line as a dangerous thing. Standing on the line will indicate you are in danger.
+-- To turn this around you can pass different 'danger modes'.
+-- See the CORE_Init.lua for more info.
 local FRIENDLY = core.constants.lines.danger.FRIENDLY -- will classify the line as friendly
 core:Connect("player", "Bob", 4, EXTEND, FRIENDLY)
 
@@ -81,8 +83,9 @@ core:Disk("player", 30)
 -- You can also add additional text to the disk for more information
 core:Disk("player", 30, "Shackle 1")
 
--- By default CORE sees a disk as a dangerous zone meaning that standing in the radius of the disk will indicate you are in danger,
--- To turn this around you can pass different 'danger modes'. Read more about 'danger modes' in the Init function of CORE.
+-- By default CORE sees a disk as a dangerous zone. Standing in the disk will indicate you are in danger,
+-- To turn this around you can pass different 'danger modes'.
+-- See the CORE_Init.lua for more info.
 local FRIENDLY = core.constants.disks.danger.FRIENDLY -- will classify the disk area as friendly
 core:Disk("player", 30, "Shackle 1", FRIENDLY)
 

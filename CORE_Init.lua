@@ -306,14 +306,10 @@ function core:FindGUID(src)
             return src
       elseif core._unitRoster[src] then
             return core._unitRoster[src]
-      end
-
-      -- before looking by name, remove any realm name
-      local name = string.gsub(src, "%-[^|]+", "")
-      if core._nameRoster[name] then
-            return core._nameRoster[name]
+      elseif UnitGUID(src) and core._unitRoster[UnitGUID(src)] then
+            return core._unitRoster[UnitGUID(src)]
       else
-            return nil
+            return core:FindUnitByName(src)
       end
 end
 
@@ -322,6 +318,16 @@ function core:FindUnitID(src)
 
       if guid then
             return core._roster[guid]
+      else
+            return nil
+      end
+end
+
+function core:FindUnitByName(name)
+      -- before looking by name, remove any realm name
+      local nameStripped = string.gsub(name, "%-[^|]+", "")
+      if core._nameRoster[nameStripped] then
+            return core._nameRoster[nameStripped]
       else
             return nil
       end
@@ -775,6 +781,7 @@ end
 
 function core:_connect(src, dest, width, extend, danger)
       local line = core:_createLine(src, dest)
+      if not line then return end
       line:Draw(width, extend, danger)
       return line
 end
@@ -1127,7 +1134,14 @@ function core:Connect(src, dest, width, extend, danger)
       extend = extend or core.constants.lines.extend.SEGMENT
       danger = danger or core.constants.lines.danger.DANGER
 
-      return core:_connect(src, dest, width, extend, danger)
+      local line = core:_connect(src, dest, width, extend, danger)
+
+      if not line then
+            warn("could not create a line for %s and %s", src, dest)
+            return
+      end
+
+      return line
 end
 
 -----------------------------------------------------------------------------------------------------------------------

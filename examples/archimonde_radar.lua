@@ -1,72 +1,144 @@
 --[[
-## CUSTOM TRIGGER
-Type: Custom
-Event Type: Event
-COMBAT_LOG_EVENT_UNFILTERED, ENCOUNTER_END
+The following file contains two functions:
+      - A custom trigger function
+      - A custom untrigger function
+
+If you are somewhat familiar with WeakAuras, you should know where this goes,
+else I suggest you take an easier tutorial then this ;)
+
+(The reason I place the two functions on a local variable, is because I personally use a lua-linter)
+
+CUSTOM TRIGGER
+      Type: Custom
+      Event Type: Event
+      COMBAT_LOG_EVENT_UNFILTERED, ENCOUNTER_END
 ]]
 local CUSTOM_TRIGGER = function(event, ...)
       local core = WA_RADAR_CORE
-      if not core then return end
+      if not core then
+            -- no CORE, bail out early
+            return false
+      end
 
       local encounterId, subevent, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellID, extraSpellName, extraSchool = ...
 
+      -- Shackled Torment actually has 2 different spellId's which are both used
+      -- one will be passed during SPELL_AURA_APPLIED, the other during SPELL_AURA_REMOVED
+      -- Why? because Blizzard...
+      local SHACKLE_SPELL_ID_ONE = 184964
+      local SHACKLE_SPELL_ID_TWO = 184931
+
+      local FOCUSED_CHAOS_SPELL_ID = 185014
+
+      -- For this radar we will keep track of a few things ourselves
+      -- the first being all the lines that we setup because of Focused Chaos and Wrought
+      -- the second are the 3 Shackled Torments
+      -- the third is a trivial counter, we'll use it to give the shackled torments a nice raid marker and a name.
       aura_env.lines = aura_env.lines or {}
       aura_env.shackles = aura_env.shackles or {}
       aura_env.shackleCount = aura_env.shackleCount or 0
 
+      -- Ths shackle radius for Mythic is limited to 25 yards, by adding .5 we add a safety net.
       local SHACKLE_RADIUS = 25.5
 
-      if subevent == "SPELL_AURA_APPLIED" and spellId == 184964 then
+      -- If you don't fully understand it yet, don't worry.
+      -- Every part is explained below ;-)
+
+      if subevent == "SPELL_AURA_APPLIED" and (spellId == SHACKLE_SPELL_ID_ONE or spellId == SHACKLE_SPELL_ID_TWO) then
             core:Enable()
+            -- A shackle has been applied, so let's increment the counter
             aura_env.shackleCount = aura_env.shackleCount + 1
 
+            -- Shackled Torment is a debuff that basically locks down the position of the player when it is applied.
+            -- The area to remove the shackle is 25 yards, anyone standing in this area when the shackle breaks, will die.
+            -- To capture all this on the radar we will do the following:
+            --    - Capture the position of the player who received the shackled Torment
+            --    - Turn that position into a static not-moving point
+            --    - Create a disk with a radius of 25.5 yads on that static point
+            --    - Store the disk in our predefined list, so that we can destroy it on removal.
+
+            -- First of all, we need an easy unique key to keep the disk reference,
+            -- an easy choice is the UnitGUID of the player who received the shackled torment, destGUID
+            -- just to avoid confusion we'll add a prefix "SHACKLE_" to it as well.
             local key = "SHACKLE_" .. destGUID
+
+            -- Just "fo'show" we'll add some text to our disk, saying "Shackle X" where X is the number of the shackle (3 total)
             local text = "Shackle " .. aura_env.shackleCount
-            -- convert the destGUIDs current position into a static point and place it on the radar
-            -- we pass the shackle count as a number, it'll make the static point look like a raid marker on the radar
-            -- 1 = star, 2 = circle, 3 = diamond
+
+            -- Now it's time to capture the position of the player, and turn it into a static not-moving point.
+            -- This is very easy with CORE, all CORE needs is:
+            --    -A unique key for the static point, so that you can easely reference it,
+            --     just like players we'll use our shackle key we made earlier.
+            --    -The reference to a member of the group so CORE can capture the position,
+            --     CORE doesn't care what you pass, a unitID, GUID or name
+            --    -As little extra we'll also give this static point a raid marker icon that indicates the number of the shackle
+            --     just to refresh your memory: 1 = star, 2 = circle, 3 = diamond
             core:Static(key, destGUID, aura_env.shackleCount)
-            -- now we place a disk on the static point, indicates the shackle radius
+            -- Once the static point is created, CORE will paint it on the radar display and we can now reference it for other use
+            -- So let's place our shackled torment disk on it
             core:Disk(key, SHACKLE_RADIUS, text)
-            -- save the disk ref, we need it for later
+            -- We have to destroy the disk later.
+            -- To be able to do this we have 2 options:
+            --    -We just remember the key of the static point and ask core to destroy the disk
+            --    -We keep the disk reference ourself, and destroy it ourselves
+            -- We'll go with the last option for now.
             aura_env.shackles[key] = disk
       end
 
-      if subevent == "SPELL_AURA_REMOVED" and spellId == 184964 then
+      if subevent == "SPELL_AURA_REMOVED" and (spellId == 184964 or spellId == 184931) then
             core:Enable()
+            -- A shackle has been removed, so let's decrement the counter
             aura_env.shackleCount = aura_env.shackleCount - 1
 
+            -- Remmeber our key? We need it again here because we're going to look up our disk.
             local key = "SHACKLE_" .. destGUID
-            -- look up the disk
             local disk = aura_env.shackles[key]
 
             if disk then
-                  -- destroy it, shackle has been removed
+                  -- We have indeed earlier made a disk for this player, let's destroy it now, it's been removed.
                   disk:Destroy()
-                  -- remove the static, don't need it anymore
+                  -- The disk is removed, so now we can also safely remove the static point, it has served its purpose.
                   core:RemoveStatic(key)
             end
       end
 
       if subevent == "SPELL_AURA_APPLIED" and spellId == 185014 then
             core:Enable()
+            -- A Focused Chaos has been applied to someone. This means that Archimonde has connected two people together.
+            -- In 5 seconds a beam of energy will be created between these two, dealing damage to anyone standing in this beam.
+            -- To make this visible on the CORE radar we'll use the Connect method to draw a visible line between the two.
 
-            local EXTEND = core.constants.lines.extend.HALF
+            -- A Focused Chaos beam is a beam that starts from the second person and goes in the direction of the one with Focused Chaos.
+            -- The beam doesn't end there, it is extended on the player with Focused Chaos.
+            -- CORE allows you to draw connections with different 'extend modes', for Archimonde we'll go with the HALF option
+            -- This implies that the line that will be drawn will be extended at the destination.
+            local HALF = core.constants.lines.extend.HALF
+
+            -- All we have todo now is find a valid player reference for the 2 connected people. The first one we know, it's destGUID again.
             local focused = destGUID
-            -- to know who has the connected wrought, we just read it off the Focused Chaos debuff
-            local wrought = select(8, UnitDebuff(destName, GetSpellInfo(185014) or "Focused Chaos"))
+            -- To know the connected person, we can look it up via UnitDebuff, the return value 'caster' will hold a unitID of the connected person.
+            -- We'll call the connected person wrought, because that's the name of the debuff he is holding.
+            -- I like to make WeakAuras language independant. So instead of passing "Focused Chaos" as a name directly into UnitDebuff,
+            -- I will get the real spellbook name using GetSpellInfo, it'll return the correctly translated name for every client.
+            local wrought = select(8, UnitDebuff(destName, GetSpellInfo(FOCUSED_CHAOS_SPELL_ID) or "Focused Chaos"))
 
             if focused and wrought then
-                  -- we can give WA_RADAR_CORE GUIDs and names, it will deal with it for you
-                  -- a width of 4 is perfect for archimonde focused chaos beams
+                  -- Once we have a reference to both players, we can connect them.
+                  -- Just to show that CORE can deal with an player reference, wrought is actualy a unitID ('raid1', 'raid2', ...)
+                  -- while focused is a GUID. CORE doesn't mind what you pass, as long as it's a known member of the group.
+                  -- (and trust me, if it doesn't, you'll get a nice warning in chat ;-))
                   --
-                  -- HALF will extend the line on the destination, we want the line to be extended on the focused target
-                  -- so we pass wrought as the source, and focused as the destination and tell the radar to extend half
-                  -- other options are:
-                  --    -EXTEND: Extends the line in both directions
-                  --    -SEGMENT: Keeps the line only between source and destination
-                  local line = core:Connect(wrought, focused, 4, EXTEND)
-                  -- keep the line ref, need it for later
+                  -- Focused Chaos beam works nicely with a witdh of 4,
+                  -- there is no easy way of finding the number for this, apart from trying.
+                  --
+                  -- And remember that we want to have the line extended on the person with Focused Chaos itself.
+                  -- This means, wrought is our source, focused is our destination and we tell CORE to HALF-extend.
+                  local line = core:Connect(wrought, focused, 4, HALF)
+
+                  -- Just like with our Shackled Torment disk we have 2 options:
+                  --    -We can just keep the 2 player references and disconnect the line by using CORE
+                  --    -Or we keep the line object ourselves, and call Disconnect on it later ourselves.
+                  -- Because it's more annoying to keep the 2 player references, i'll just store the line object.
                   aura_env.lines[focused] = line
             end
       end
@@ -74,19 +146,21 @@ local CUSTOM_TRIGGER = function(event, ...)
       if subevent == "SPELL_AURA_REMOVED" and spellId == 185014 then
             core:Enable()
 
+            -- The Focused Chaos beam has gone. So let's look up our line, and disconnect it.
             local focused = destGUID
-            -- look up the line that's linked with the focused playerGUID
             local line = aura_env.lines[focused]
 
             if line then
-                  -- destroy the line
-                  line:Destroy()
-                  -- remove from local refs
+                  -- Because we have the line object ourselves, we can disconnect it directly.
+                  line:Disconnect()
+                  -- And we can throw away our reference to it.
                   aura_env.lines[focused] = nil
             end
       end
 
-      -- going into last phase, disable radar in 5...
+      -- Archimonde has started casting Nether Ascension, this means he's going into last phase.
+      -- Let's get the rader off the screen, we don't really need it anymore.
+      -- I'll add a little delay from the start of the cast, just because it's fancy :)
       if subevent == "SPELL_CAST_START" and spellId == 190313 then
             C_Timer.After(5, function()
                   aura_env.shackles = {}
@@ -96,7 +170,8 @@ local CUSTOM_TRIGGER = function(event, ...)
             end)
       end
 
-      -- encounter ended, disable radar
+      -- The encounter has ended, either because we wiped, or we killed him (yay!)
+      -- Let's disable CORE. and reset our internal data stores.
       if event == "ENCOUNTER_END" and encounterId == 1799 then
             aura_env.shackles = {}
             aura_env.lines = {}
@@ -104,9 +179,15 @@ local CUSTOM_TRIGGER = function(event, ...)
             core:Disable()
       end
 
+      -- Don't forget, a WeakAura trigger function has to return true/false for it to work.
+      -- Let's just always return true. that's easy.
       return true
 end
 
+--[[
+CUSTOM UNTRIGGER:
+      Hide: Custom
+]]
 local CUSTOM_UNTRIGGER = function()
       return true
 end

@@ -38,7 +38,7 @@ local CUSTOM_TRIGGER = function(event, ...)
       aura_env.shackles = aura_env.shackles or {}
       aura_env.shackleCount = aura_env.shackleCount or 0
 
-      -- Ths shackle radius for Mythic is limited to 25 yards, by adding .5 we add a safety net.
+      -- The shackle radius for Mythic is limited to 25 yards, by adding .5 we add a safety net.
       local SHACKLE_RADIUS = 25.5
 
       -- If you don't fully understand it yet, don't worry.
@@ -67,8 +67,8 @@ local CUSTOM_TRIGGER = function(event, ...)
 
             -- Now it's time to capture the position of the player, and turn it into a static not-moving point.
             -- This is very easy with CORE, all CORE needs is:
-            --    -A unique key for the static point, so that you can easely reference it,
-            --     just like players we'll use our shackle key we made earlier.
+            --    -A unique key for the static point, so that you can easely reference it just like players,
+            --     we'll use our shackle key we made earlier.
             --    -The reference to a member of the group so CORE can capture the position,
             --     CORE doesn't care what you pass, a unitID, GUID or name
             --    -As little extra we'll also give this static point a raid marker icon that indicates the number of the shackle
@@ -124,12 +124,12 @@ local CUSTOM_TRIGGER = function(event, ...)
 
             if focused and wrought then
                   -- Once we have a reference to both players, we can connect them.
-                  -- Just to show that CORE can deal with an player reference, wrought is actualy a unitID ('raid1', 'raid2', ...)
+                  -- Just to show that CORE can deal with any player reference, wrought is actualy a unitID ('raid1', 'raid2', ...)
                   -- while focused is a GUID. CORE doesn't mind what you pass, as long as it's a known member of the group.
                   -- (and trust me, if it doesn't, you'll get a nice warning in chat ;-))
                   --
                   -- Focused Chaos beam works nicely with a witdh of 4,
-                  -- there is no easy way of finding the number for this, apart from trying.
+                  -- there is no easy way of finding the number for this, apart from trying, but I did it for you!
                   --
                   -- And remember that we want to have the line extended on the person with Focused Chaos itself.
                   -- This means, wrought is our source, focused is our destination and we tell CORE to HALF-extend.
@@ -151,7 +151,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             local line = aura_env.lines[focused]
 
             if line then
-                  -- Because we have the line object ourselves, we can disconnect it directly.
+                  -- Because we have the line object, we can disconnect it directly.
                   line:Disconnect()
                   -- And we can throw away our reference to it.
                   aura_env.lines[focused] = nil

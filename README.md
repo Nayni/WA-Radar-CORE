@@ -10,6 +10,27 @@ What this implementation tries to do is expand on the idea and add more features
 
 Radar CORE is a WeakAura that's controllable by making additional weakauras. The public API of radar CORE tries to be as simple as possible for an elaborate example please see the examples folder.
 
+To install radar CORE as a WeakAura:
+1. Create a new WeakAura of the Icon Type
+2. Set the color alpha to 0, hiding the icon, all we need is the frame.
+3. *(Optionally)* choose an icon, mostly used to identify the WeakAura in the list on the left.
+4. The display should be a custom function so use "%c" as the text, this will allow you to input a function as display
+5. Set "Update custom text on..." to "Every frame"
+6. Expand the text editor and paste the [display function](/CORE_Display.lua) into the editor (just the function, skip the local declaration)
+7. Choose a *width* and *height* for the radar (the display logic will always choose the maximum of both and take that as width and height of the radar)
+8. Go to the *Trigger* tab
+9. Choose *Custom* as your *Trigger Type*
+10. Choose *Status* as *Event Type*
+11. Choose *Every Frame* as *Check On...*
+12. Expand the Text Editor of *Custom Trigger* and paste the [trigger function](/CORE_Trigger.lua) into the editor (just the function, skip the local declaration)
+13. Expand the Text Editor of *Custom Untrigger* and paste the [untrigger function](/CORE_Trigger.lua) into the editor (just the function, skip the local declaration)
+14. Go to the *Actions* tab
+15. Check *custom*
+16. Expand the Text Editor of *Custom Code* and paste the [init code](/CORE_Init.lua) into the editor
+17. You've intsalled radar CORE!
+
+## API Documentation
+
 ### Enable / Disable
 
 Before Radar CORE can do anything it has to be enabled.

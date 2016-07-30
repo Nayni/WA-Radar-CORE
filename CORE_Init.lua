@@ -306,8 +306,8 @@ function core:FindGUID(src)
             return src
       elseif core._unitRoster[src] then
             return core._unitRoster[src]
-      elseif UnitGUID(src) and core._unitRoster[UnitGUID(src)] then
-            return core._unitRoster[UnitGUID(src)]
+      elseif UnitGUID(src) and core._roster[UnitGUID(src)] then
+            return core._roster[UnitGUID(src)]
       else
             return core:FindUnitByName(src)
       end

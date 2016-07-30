@@ -30,6 +30,9 @@ local CUSTOM_TRIGGER = function(event, ...)
 
       local FOCUSED_CHAOS_SPELL_ID = 185014
 
+      local NETHER_ASCENSION_SPELL_ID = 190313
+      local ARCHIMONDE_ENCOUNTER_ID = 1799
+
       -- For this radar we will keep track of a few things ourselves
       -- the first being all the lines that we setup because of Focused Chaos and Wrought
       -- the second are the 3 Shackled Torments
@@ -85,7 +88,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             aura_env.shackles[key] = disk
       end
 
-      if subevent == "SPELL_AURA_REMOVED" and (spellId == 184964 or spellId == 184931) then
+      if subevent == "SPELL_AURA_REMOVED" and (spellId == SHACKLE_SPELL_ID_ONE or spellId == SHACKLE_SPELL_ID_TWO) then
             core:Enable()
             -- A shackle has been removed, so let's decrement the counter
             aura_env.shackleCount = aura_env.shackleCount - 1
@@ -102,7 +105,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             end
       end
 
-      if subevent == "SPELL_AURA_APPLIED" and spellId == 185014 then
+      if subevent == "SPELL_AURA_APPLIED" and spellId == FOCUSED_CHAOS_SPELL_ID then
             core:Enable()
             -- A Focused Chaos has been applied to someone. This means that Archimonde has connected two people together.
             -- In 5 seconds a beam of energy will be created between these two, dealing damage to anyone standing in this beam.
@@ -143,7 +146,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             end
       end
 
-      if subevent == "SPELL_AURA_REMOVED" and spellId == 185014 then
+      if subevent == "SPELL_AURA_REMOVED" and spellId == FOCUSED_CHAOS_SPELL_ID then
             core:Enable()
 
             -- The Focused Chaos beam has gone. So let's look up our line, and disconnect it.
@@ -161,7 +164,7 @@ local CUSTOM_TRIGGER = function(event, ...)
       -- Archimonde has started casting Nether Ascension, this means he's going into last phase.
       -- Let's get the rader off the screen, we don't really need it anymore.
       -- I'll add a little delay from the start of the cast, just because it's fancy :)
-      if subevent == "SPELL_CAST_START" and spellId == 190313 then
+      if subevent == "SPELL_CAST_START" and spellId == NETHER_ASCENSION_SPELL_ID then
             C_Timer.After(5, function()
                   aura_env.shackles = {}
                   aura_env.lines = {}
@@ -172,7 +175,7 @@ local CUSTOM_TRIGGER = function(event, ...)
 
       -- The encounter has ended, either because we wiped, or we killed him (yay!)
       -- Let's disable CORE. and reset our internal data stores.
-      if event == "ENCOUNTER_END" and encounterId == 1799 then
+      if event == "ENCOUNTER_END" and encounterId == ARCHIMONDE_ENCOUNTER_ID then
             aura_env.shackles = {}
             aura_env.lines = {}
             aura_env.shackleCount = 0

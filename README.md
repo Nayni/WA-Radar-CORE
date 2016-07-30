@@ -9,6 +9,7 @@ What this implementation tries to do is expand on the idea and add more features
 ## Getting started
 
 Radar CORE is a WeakAura that sets up a global called WA_RADAR_CORE. This global object holds the public api of the radar and can be manipulated from your own personal WeakAuras.
+
 The public API of radar CORE tries to be as simple as possible so that you don't have to worry about any display logic or geometry to make radar functionality.
 Read the documentation or browse the examples to see how you could use the core api.
 

@@ -28,7 +28,7 @@ To install radar CORE as a WeakAura:
 14. Go to the **Actions** tab
 15. Check **Custom**
 16. Expand the Text Editor of **Custom Code** and paste the [init code](/CORE_Init.lua) into the editor
-17. You've intsalled radar CORE!
+17. You've intsalled radar CORE! Start coding your own boss radar functions or use one of the [examples](/examples/archimonde_radar.lua)
 
 ## API Documentation
 

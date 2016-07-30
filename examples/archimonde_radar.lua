@@ -171,10 +171,12 @@ local CUSTOM_TRIGGER = function(event, ...)
       -- The encounter has ended, either because we wiped, or we killed him (yay!)
       -- Let's disable CORE. and reset our internal data stores.
       if event == "ENCOUNTER_END" and encounterId == ARCHIMONDE_ENCOUNTER_ID then
-            aura_env.shackles = {}
-            aura_env.lines = {}
-            aura_env.shackleCount = 0
-            core:Disable()
+            C_Timer.After(5, function()
+                  aura_env.shackles = {}
+                  aura_env.lines = {}
+                  aura_env.shackleCount = 0
+                  core:Disable()
+            end)
       end
 
       -- Don't forget, a WeakAura trigger function has to return true/false for it to work.

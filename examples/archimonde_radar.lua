@@ -22,14 +22,9 @@ local CUSTOM_TRIGGER = function(event, ...)
 
       local encounterId, subevent, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellID, extraSpellName, extraSchool = ...
 
-      -- Shackled Torment actually has 2 different spellId's which are both used
-      -- one will be passed during SPELL_AURA_APPLIED, the other during SPELL_AURA_REMOVED
-      -- Why? because Blizzard...
-      local SHACKLE_SPELL_ID_ONE = 184964
-      local SHACKLE_SPELL_ID_TWO = 184931
 
+      local SHACKLED_TORMENT_SPELL_ID = 184964
       local FOCUSED_CHAOS_SPELL_ID = 185014
-
       local NETHER_ASCENSION_SPELL_ID = 190313
       local ARCHIMONDE_ENCOUNTER_ID = 1799
 
@@ -47,7 +42,7 @@ local CUSTOM_TRIGGER = function(event, ...)
       -- If you don't fully understand it yet, don't worry.
       -- Every part is explained below ;-)
 
-      if subevent == "SPELL_AURA_APPLIED" and (spellId == SHACKLE_SPELL_ID_ONE or spellId == SHACKLE_SPELL_ID_TWO) then
+      if subevent == "SPELL_AURA_APPLIED" and spellId == SHACKLED_TORMENT_SPELL_ID then
             core:Enable()
             -- A shackle has been applied, so let's increment the counter
             aura_env.shackleCount = aura_env.shackleCount + 1
@@ -79,7 +74,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             core:Static(key, destGUID, aura_env.shackleCount)
             -- Once the static point is created, CORE will paint it on the radar display and we can now reference it for other use
             -- So let's place our shackled torment disk on it
-            core:Disk(key, SHACKLE_RADIUS, text)
+            local disk = core:Disk(key, SHACKLE_RADIUS, text)
             -- We have to destroy the disk later.
             -- To be able to do this we have 2 options:
             --    -We just remember the key of the static point and ask core to destroy the disk
@@ -88,7 +83,7 @@ local CUSTOM_TRIGGER = function(event, ...)
             aura_env.shackles[key] = disk
       end
 
-      if subevent == "SPELL_AURA_REMOVED" and (spellId == SHACKLE_SPELL_ID_ONE or spellId == SHACKLE_SPELL_ID_TWO) then
+      if subevent == "SPELL_AURA_REMOVED" and spellId == SHACKLED_TORMENT_SPELL_ID then
             core:Enable()
             -- A shackle has been removed, so let's decrement the counter
             aura_env.shackleCount = aura_env.shackleCount - 1

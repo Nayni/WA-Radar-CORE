@@ -443,6 +443,7 @@ local linePrototype = {
       end,
 
       Disconnect = function(this)
+            core._inDangerLine = false
             this:Hide()
       end,
 
@@ -582,17 +583,6 @@ local linePrototype = {
             this.danger = danger
 
             this:SetScript("OnUpdate", this._draw)
-      end,
-
-      _destroy = function(this)
-            this:SetScript("OnUpdate", nil)
-            this:ClearAllPoints()
-            this:SetParent(core._frame)
-            this:SetPoint("CENTER")
-            this:Hide()
-
-            core._lines = core._lines or {}
-            core._lines[this.key] = nil
       end,
 
       _draw = function(this)
@@ -830,6 +820,7 @@ local diskPrototype = {
       end,
 
       Destroy = function(this)
+            core._inDangerDisk = false
             this.shown = false
             this:Hide()
       end,

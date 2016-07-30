@@ -3,6 +3,11 @@ local CUSTOM_DISPLAY = function()
       local core = WA_RADAR_CORE
       if not core then return end
 
+      --[[
+      #######################################################################################################################
+            GRAB THE WEAKAURA FRAME AND HOOK IT UP TO CORE.
+      #######################################################################################################################
+      ]]
       local frame = WeakAuras["regions"][aura_env.id]["region"]
       core._frame = frame
 
@@ -12,6 +17,12 @@ local CUSTOM_DISPLAY = function()
 
       core:_updateScale(width)
 
+      --[[
+      #######################################################################################################################
+            THE RADAR DISPLAY
+            If you are interested in making the display look way better then it is. This is the area you can go crazy ;-)
+      #######################################################################################################################
+      ]]
       frame.border = frame.border or frame:CreateTexture(nil, "BACKGROUND")
       frame.border:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
       frame.border:SetPoint("TOPLEFT", -10, 10)
@@ -22,8 +33,9 @@ local CUSTOM_DISPLAY = function()
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_Smooth_Border")
       frame.background:SetAllPoints(frame)
 
+      -- To know if the player is standing in dangerous things, you have 2 indicators to check for.
       if core._inDangerLine or core._inDangerDisk then
-            frame.background:SetVertexColor(.6, .3, .3, 0.7)
+            frame.background:SetVertexColor(.6, .3, .3, 0.7) -- let's make the radar background go red-ish
       else
             frame.background:SetVertexColor(.3, .3, .3, 0.5)
       end
@@ -36,5 +48,11 @@ local CUSTOM_DISPLAY = function()
       frame.arrow.t:SetAllPoints()
       frame.arrow.t:SetTexture([[Interface\MINIMAP\MiniMap-DeadArrow]])
 
+
+      --[[
+      #######################################################################################################################
+            CALL CORE TO UPDATE ITSELF
+      #######################################################################################################################
+      ]]
       core._updater()
 end

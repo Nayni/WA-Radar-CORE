@@ -1,10 +1,17 @@
-# WA RADAR CORE
-A radar for World of Warcraft written for WeakAuras
+# Radar CORE
+An in-game radar for World of Warcraft written for use with WeakAuras.
 
-Idea of this module came from looking at the implementation of [ekardnah](http://www.mmo-champion.com/members/742395-ekardnah) the module can be found on [mmo-champion](http://www.mmo-champion.com/threads/1839869-Raid-HUD-plotter-for-WeakAuras).
-What this implementation tries to do is expand on the idea and add more features and even easier extensions.
+Radar CORE is an attempt at making a radar and position tracking framework build with WeakAuras and usable by WeakAuras.
 
-# STILL BEEING ACTIVELY DEVELOPED!
+The display logic and geometry that comes with mapping players or other objects on a radar/map is complicated. With the current state of raid and/or dungeon encounters positioning is a very important factor, giving players visual clues on where they are, should or shouldn't be is very valuable. What I found was that a radar with some basic functionality was something I could be using a lot to make raid encounter WeakAuras. Many abilities have a something to do with range or certain positioning.
+
+This is my attempt at making a stand-alone, extensible and re-usable radar framework that solves a lot of problems I would normally have to solve over and over again.
+
+Idea of this module came from looking at the implementation of [ekardnah](http://www.mmo-champion.com/members/742395-ekardnah) the module can be found on [mmo-champion](http://www.mmo-champion.com/threads/1839869-Raid-HUD-plotter-for-WeakAuras). What this implementation tries to do is expand on the idea and add more features and even easier extensions.
+
+Radar CORE is a single WeakAura that you just install like any other WeakAuras, but gives you a global variable that holds the framework for many functions that help you map players on a radar display and gives you access to many utility functions to calculate positions and ranges.
+
+### STILL BEEING ACTIVELY DEVELOPED!
 
 ## Getting started
 
@@ -13,7 +20,7 @@ Radar CORE is a WeakAura that sets up a global called WA_RADAR_CORE. This global
 The public API of radar CORE tries to be as simple as possible so that you don't have to worry about any display logic or geometry to make radar functionality.
 Read the documentation or browse the examples to see how you could use the core api.
 
-To install radar CORE as a WeakAura:
+### Install from source
 
 1. Create a new WeakAura of the **Icon Type**
 2. Set the color alpha to 0, hiding the icon, all we need is the frame.
@@ -32,6 +39,10 @@ To install radar CORE as a WeakAura:
 15. Check **Custom**
 16. Expand the Text Editor of **Custom Code** and paste the [init code](/CORE_Init.lua) into the editor
 17. You've intsalled radar CORE! Start coding your own boss radar functions or use one of the [examples](/examples/archimonde_radar.lua)
+
+### Install from export string
+
+WeakAura export string coming soon...
 
 ## API Documentation
 

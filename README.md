@@ -8,7 +8,8 @@ What this implementation tries to do is expand on the idea and add more features
 
 ## Getting started
 
-Radar CORE is a WeakAura that sets up a global called WA_RADAR_CORE. This global object holds the public api of the radar and can be manipulated from your own personal WeakAuras. The public API of radar CORE tries to be as simple as possible so that you don't have to worry about any display logic or geometry to make radar functionality.
+Radar CORE is a WeakAura that sets up a global called WA_RADAR_CORE. This global object holds the public api of the radar and can be manipulated from your own personal WeakAuras.
+The public API of radar CORE tries to be as simple as possible so that you don't have to worry about any display logic or geometry to make radar functionality.
 Read the documentation or browse the examples to see how you could use the core api.
 
 To install radar CORE as a WeakAura:
@@ -138,6 +139,12 @@ core:Static("my_new_static", 4450, 3530, star)
 
 -- or
 core:Static("my_personal_static", "player", star)
+
+-- To remove a static point:
+core:RemoveStatic("my_personal_static")
+
+-- or remove them all at once
+core:RemoveAllStatic()
 ```
 
 ### Utilities
@@ -164,11 +171,8 @@ core:GetInRangeCount("Bob", 20)
 
 ## Contribute
 Found a bug?
-
 Got an idea for a cool new feature?
-
 Got some fancy new display ideas?
-
 Got an implementation for a not yet covered boss?
 
 Contributions are more then welcome. Just use Github pull requests! But try to keep the following in mind:

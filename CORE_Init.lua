@@ -645,12 +645,6 @@ local linePrototype = {
 
             local dx, dy, cx, cy = ex - sx, ey - sy, (sx + ex) / 2, (sy + ey) / 2
 
-            core._dx = dx
-            core._dy = dy
-
-            core._cx = cx
-            core._cy = cy
-
             if dx < 0 then
                   dx, dy = -dx, -dy
             end
@@ -1244,8 +1238,19 @@ end
 -- @param range : the range to check for, in yards
 -- @return      : true if the unit is in range of "me", false otherwise
 -----------------------------------------------------------------------------------------------------------------------
-function core:IsInRange(unit, range)
-      local d = core:Distance("player", unit)
+function core:IsInRangeOfMe(unit, range)
+      return core:AreInRange("player", unit, range)
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Determines if two units are in range of eachother.
+-- @param unit1 : unit reference of the unit, can be unitID, guid, name
+-- @param unit2 : unit reference of the unit, can be unitID, guid, name
+-- @param range : the range to check for, in yards
+-- @return      : true if the unit is in range of "me", false otherwise
+-----------------------------------------------------------------------------------------------------------------------
+function core:AreInRange(unit1, unit2, range)
+      local d = core:Distance(unit1, unit2)
 
       if d and d <= range then
             return true
@@ -1261,10 +1266,12 @@ end
 -- @return      : an array of unitIDs
 -----------------------------------------------------------------------------------------------------------------------
 function core:GetInRangeMembers(unit, range)
-      if not unit then return end
-      if not range then return end
-
       local members = {}
+
+      if (not unit) or (not range) then
+            return members
+      end
+
       for u, _ in pairs(core._roster) do
             local unitIsStatic = core:_isStatic(u)
             if not unitIsStatic then

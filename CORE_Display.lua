@@ -54,5 +54,5 @@ local CUSTOM_DISPLAY = function()
             CALL CORE TO UPDATE ITSELF
       #######################################################################################################################
       ]]
-      core._updater()
+      core:_updater()
 end

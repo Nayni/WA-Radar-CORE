@@ -168,7 +168,11 @@ core:Distance("player", "Bob")
 -- output: 60.050
 
 -- Check if Bob is in a range of 20 yards of yourself
-core:IsInRange("Bob", 20)
+core:IsInRangeOfMe("Bob", 20)
+-- output: true/false
+
+-- Check if Bob and Johny are in a range of 20 yards of eachother
+core:AreInRange("Bob", "Johny", 20)
 -- output: true/false
 
 -- Get a list of all unitIDs (raid1, raid2, raid3, ...) of all members in range of a given unit
@@ -182,10 +186,10 @@ core:GetInRangeCount("Bob", 20)
 ```
 
 ## Contribute
-Found a bug?
-Got an idea for a cool new feature?
-Got some fancy new display ideas?
-Got an implementation for a not yet covered boss?
+Found a bug?  
+Got an idea for a cool new feature?  
+Got some fancy new display ideas?  
+Made an implementation for a not yet covered boss?  
 
 Contributions are more then welcome. Just use Github pull requests! But try to keep the following in mind:
 
@@ -193,3 +197,5 @@ Contributions are more then welcome. Just use Github pull requests! But try to k
 - Use spaces (6 to be precise) for indentation
 - Program defensively, most of the logic runs every frame so check everything!
 - Test, test and test it!
+
+**Currently very interested for ideas to make the display better!**

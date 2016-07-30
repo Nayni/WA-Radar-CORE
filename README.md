@@ -160,3 +160,14 @@ core:GetInRangeCount("Bob", 20)
 -- output: 3
 
 ```
+
+## Contribute
+Found a bug?
+Got an idea for a cool new feature?
+Got some fancy new display ideas?
+
+Contributions are more then welcome. Just use Github pull requests! But try to keep the following in mind:
+
+- Radar CORE is a weak aura, so try to be backwards compatible as much as possible
+- Use spaces (6 to be precise) for indentation
+- Program defensively, check everything!

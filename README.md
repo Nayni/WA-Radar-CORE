@@ -11,6 +11,7 @@ What this implementation tries to do is expand on the idea and add more features
 Radar CORE is a WeakAura that's controllable by making additional weakauras. The public API of radar CORE tries to be as simple as possible for an elaborate example please see the examples folder.
 
 To install radar CORE as a WeakAura:
+
 1. Create a new WeakAura of the Icon Type
 2. Set the color alpha to 0, hiding the icon, all we need is the frame.
 3. *(Optionally)* choose an icon, mostly used to identify the WeakAura in the list on the left.

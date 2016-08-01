@@ -3,13 +3,15 @@ An in-game radar for World of Warcraft written for use with WeakAuras.
 
 Radar CORE is an attempt at making a radar and position tracking framework build with WeakAuras and usable by WeakAuras.
 
-The display logic and geometry that comes with mapping players or other objects on a radar/map is complicated. With the current state of raid and/or dungeon encounters positioning is a very important factor, giving players visual clues on where they are, should or shouldn't be is very valuable. What I found was that a radar with some basic functionality was something I could be using a lot to make raid encounter WeakAuras. Many abilities have a something to do with range or certain positioning.
+The display logic and geometry that comes with mapping players or other objects on a radar/map is complicated. With the current state of raid and/or dungeon encounters positioning is a very important factor, giving players visual clues on where they are, should or shouldn't be is very valuable. What I found was that a radar with some basic functionality was something I could be using a lot to make raid encounter WeakAuras. Many abilities have something to do with range or certain positioning.
 
 This is my attempt at making a stand-alone, extensible and re-usable radar framework that solves a lot of problems I would normally have to solve over and over again.
 
 Idea of this module came from looking at the implementation of [ekardnah](http://www.mmo-champion.com/members/742395-ekardnah) the module can be found on [mmo-champion](http://www.mmo-champion.com/threads/1839869-Raid-HUD-plotter-for-WeakAuras). What this implementation tries to do is expand on the idea and add more features and even easier extensions.
 
 Radar CORE is a single WeakAura that you just install like any other WeakAuras, but gives you a global variable that holds the framework for many functions that help you map players on a radar display and gives you access to many utility functions to calculate positions and ranges.
+
+**I realise that making a global variable is not the safest or even performant option. The reason for sticking with a global for now is purely for simplicity. I think it's a lot simpler to have the core framework in 1 global object then having to communicate with it via WeakAuras.ScanEvents. Performance wise radar CORE is causing no frame lag as thus far. If any reason it ever becomes needed to ditch the global it would be perfectly doable, as the only function that would have to be re-written are the public api functions that are just (almost-)proxies into internal functions.**
 
 ### STILL BEEING ACTIVELY DEVELOPED!
 

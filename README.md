@@ -11,7 +11,7 @@ Idea of this module came from looking at the implementation of [ekardnah](http:/
 
 Radar CORE is a single WeakAura that you just install like any other WeakAuras, but gives you a global variable that holds the framework for many functions that help you map players on a radar display and gives you access to many utility functions to calculate positions and ranges.
 
-**I realise that making a global variable is not the safest or even performant option. The reason for sticking with a global for now is purely for simplicity. I think it's a lot simpler to have the core framework in 1 global object then having to communicate with it via WeakAuras.ScanEvents. Performance wise radar CORE is causing no frame lag as thus far. If for any reason it ever becomes necessary to ditch the global it would be perfectly fine. The only function that would have to be re-written are the public api functions that are just (almost-)proxies into internal functions.**
+**I realise that making a global variable is not the safest or even performant option. The reason for sticking with a global for now is purely for simplicity. I think it's a lot simpler to have the core framework in 1 global object then having to communicate with it via WeakAuras.ScanEvents. Performance wise radar CORE is causing no frame lag as thus far. If for any reason it ever becomes necessary to ditch the global it would be perfectly fine. The only functions that would have to be re-written are the public api functions that are just (almost-)proxies into internal functions.**
 
 ### STILL BEEING ACTIVELY DEVELOPED!
 

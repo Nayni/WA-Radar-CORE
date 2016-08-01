@@ -78,6 +78,21 @@ core.constants = {
 
 --[[
 #######################################################################################################################
+      FUNCTION CACHE
+#######################################################################################################################
+]]
+local CreateFrame = CreateFrame
+local UnitGUID, UnitClass, UnitName, GetUnitName, UnitIsUnit, UnitIsConnected, UnitIsDeadOrGhost,
+UnitPosition, GetPlayerFacing, GetNumGroupMembers, IsInRaid, IsInGroup =
+      UnitGUID, UnitClass, UnitName, GetUnitName, UnitIsUnit, UnitIsConnected, UnitIsDeadOrGhost,
+UnitPosition, GetPlayerFacing, GetNumGroupMembers, IsInRaid, IsInGroup
+local type, unpack, pairs, print,
+setmetatable, tgetn, tinsert, sformat, sgsub, msin, mcos, msqrt =
+      type, unpack, pairs, print,
+setmetatable, table.getn, table.insert, string.format, string.gsub, math.sin, math.cos, math.sqrt
+
+--[[
+#######################################################################################################################
       BLIZZARD FIXES
 #######################################################################################################################
 ]]
@@ -93,7 +108,7 @@ end
 #######################################################################################################################
 ]]
 local function warn(message, ...)
-      local msg = string.format(message, ...)
+      local msg = sformat(message, ...)
       print("|cFF9999FF" .. "RADAR-CORE: " .. "|r" ..  "|cFFFF3333" .. msg .. "|r")
 end
 
@@ -112,8 +127,8 @@ core._tCoeff = 256/254
 core._lineCoeff = core._tCoeff/2
 
 core._facing = 0
-core._sin = math.sin(core._facing)
-core._cos = math.cos(core._facing)
+core._sin = msin(core._facing)
+core._cos = mcos(core._facing)
 
 core._playerName = GetUnitName("player", true)
 core._inDangerLine = false
@@ -325,7 +340,7 @@ end
 
 function core:FindUnitByName(name)
       -- before looking by name, remove any realm name
-      local nameStripped = string.gsub(name, "%-[^|]+", "")
+      local nameStripped = sgsub(name, "%-[^|]+", "")
       if core._nameRoster[nameStripped] then
             return core._nameRoster[nameStripped]
       else
@@ -461,7 +476,7 @@ local linePrototype = {
 
             local dX = (sourceX - targetX)
             local dY = (sourceY - targetY)
-            local dist = math.sqrt(dX * dX + dY * dY)
+            local dist = msqrt(dX * dX + dY * dY)
 
             local t_cos = (targetX-sourceX) / dist
             local newX = VECTOR_LENGTH * t_cos  +  targetX
@@ -649,7 +664,7 @@ local linePrototype = {
                   dx, dy = -dx, -dy
             end
 
-            local l = math.sqrt((dx * dx) + (dy * dy))
+            local l = msqrt((dx * dx) + (dy * dy))
             if l == 0 then
                   this.texture:SetTexCoord(0,0,0,0,0,0,0,0)
                   this:ClearAllPoints()
@@ -758,7 +773,7 @@ function core:_intersection(x1, y1, x2, y2, r2)
       local Det = r2 * dr2 - D * D
 
       if Det > 0 then
-            local det = dy < 0 and -math.sqrt(Det) or math.sqrt(Det)
+            local det = dy < 0 and -msqrt(Det) or msqrt(Det)
             return (D * dy + dx * det)/dr2, (-D * dx + dy * det)/dr2, (D * dy - dx * det)/dr2, (-D * dx - dy * det)/dr2
       end
 end
@@ -885,7 +900,7 @@ local diskPrototype = {
             if not sx then return end
 
             local dx, dy = px - sx, py - sy
-            local distance = math.sqrt(dx * dx + dy * dy)
+            local distance = msqrt(dx * dx + dy * dy)
 
             if distance < this.radius then
                   this:Color(r1,g1,b1,a1)
@@ -952,10 +967,10 @@ end
       DISPLAY UPDATING
 #######################################################################################################################
 ]]
-function core:_updater()
+function core:_update()
       core._facing = GetPlayerFacing()
-      core._sin = math.sin(core._facing)
-      core._cos = math.cos(core._facing)
+      core._sin = msin(core._facing)
+      core._cos = mcos(core._facing)
 
       core:_updateRoster()
       core:_updatePositions()
@@ -984,7 +999,7 @@ function core:Enable()
 
       -- before we enable, run the updater once,
       -- make sure everything has an initial value
-      core:_updater()
+      core:_update()
 
       core._enabled = true
       warn("Radar enabled successfully!")
@@ -1228,7 +1243,7 @@ function core:Distance(unit1, unit2)
             return 0
       else
             local dx, dy = x2 - x1, y2 - y1
-            return math.sqrt(dx * dx + dy * dy)
+            return msqrt(dx * dx + dy * dy)
       end
 end
 
@@ -1277,7 +1292,7 @@ function core:GetInRangeMembers(unit, range)
             if not unitIsStatic then
                   local d = core:Distance(unit, u)
                   if d and d <= range then
-                        table.insert(u, members)
+                        tinsert(u, members)
                   end
             end
       end
@@ -1293,5 +1308,13 @@ end
 -----------------------------------------------------------------------------------------------------------------------
 function core:GetInRangeCount(unit, range)
       local members = core:GetInRangeMembers(unit, range)
-      return table.getn(members)
+      return tgetn(members)
+end
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Returns wether the current player is in danger or not.
+-- @return      : True if the player is standing on anything that indicates danger for the radar, false otherwise
+-----------------------------------------------------------------------------------------------------------------------
+function core:IAmInDanger()
+      return core._inDangerLine or core._inDangerDisk
 end

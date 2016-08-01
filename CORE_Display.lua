@@ -33,8 +33,7 @@ local CUSTOM_DISPLAY = function()
       frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_Smooth_Border")
       frame.background:SetAllPoints(frame)
 
-      -- To know if the player is standing in dangerous things, you have 2 indicators to check for.
-      if core._inDangerLine or core._inDangerDisk then
+      if core:IAmInDanger() then
             frame.background:SetVertexColor(.6, .3, .3, 0.7) -- let's make the radar background go red-ish
       else
             frame.background:SetVertexColor(.3, .3, .3, 0.5)
@@ -54,5 +53,5 @@ local CUSTOM_DISPLAY = function()
             CALL CORE TO UPDATE ITSELF
       #######################################################################################################################
       ]]
-      core:_updater()
+      core:_update()
 end

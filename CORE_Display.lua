@@ -24,13 +24,13 @@ local CUSTOM_DISPLAY = function()
       #######################################################################################################################
       ]]
       frame.border = frame.border or frame:CreateTexture(nil, "BACKGROUND")
-      frame.border:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White_Border")
+      frame.border:SetTexture([[Interface\AddOns\WeakAuras\Media\Textures\Circle_White_Border]])
       frame.border:SetPoint("TOPLEFT", -10, 10)
       frame.border:SetPoint("BOTTOMRIGHT", 10, -10)
       frame.border:SetVertexColor(0, 0, 0, 0.2)
 
       frame.background = frame.background or frame:CreateTexture(nil, "BACKGROUND")
-      frame.background:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_Smooth_Border")
+      frame.background:SetTexture([[Interface\AddOns\WeakAuras\Media\Textures\Circle_Smooth_Border]])
       frame.background:SetAllPoints(frame)
 
       if core:IAmInDanger() then

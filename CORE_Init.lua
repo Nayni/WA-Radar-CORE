@@ -97,9 +97,9 @@ setmetatable, table.getn, table.insert, string.format, string.gsub, math.sin, ma
 #######################################################################################################################
 ]]
 local function GetUnitPosition(unitID)
-      local posY, posX, _, instanceID = UnitPosition(unitID)
+      local posY, posX, _, mapID = UnitPosition(unitID)
 
-      return posX, posY, instanceID
+      return posX, posY, mapID
 end
 
 --[[
@@ -130,7 +130,6 @@ core._facing = 0
 core._sin = msin(core._facing)
 core._cos = mcos(core._facing)
 
-core._playerName = GetUnitName("player", true)
 core._inDangerLine = false
 core._inDangerDisk = false
 
@@ -196,7 +195,9 @@ local BLIP_TEX_COORDS = {
 }
 
 function core:_initBlip(unit, raidTargetIndex)
-      if UnitIsUnit(unit, "player") then return end
+      if UnitIsUnit(unit, "player") then
+            return
+      end
 
       local blip
 
@@ -204,7 +205,6 @@ function core:_initBlip(unit, raidTargetIndex)
             blip = core._blips[unit]
       else
             blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. unit, core._frame)
-
             blip:SetPoint("CENTER")
             blip:SetFrameStrata("DIALOG")
             blip:SetFrameLevel(5)
@@ -218,9 +218,7 @@ function core:_initBlip(unit, raidTargetIndex)
             blip.t:SetTexture(MARKER_TEXTURES[raidTargetIndex])
       else
             blip.t:SetTexture([[Interface\MINIMAP\PartyRaidBlips]])
-
             local _, class = UnitClass(unit)
-
             if BLIP_TEX_COORDS[class] then
                   blip.t:SetTexCoord(unpack(BLIP_TEX_COORDS[class]))
             else
@@ -238,11 +236,9 @@ function core:_updateBlip(unit)
       if not blip then return end
 
       local u, ux, uy, map = core:_getPosition(unit)
-
       if not ux then return end
 
       local x, y, inRange = core:GetRadarPosition(ux, uy, map)
-
       core._radarPositions[unit] = core._radarPositions[unit] or {}
       core._radarPositions[unit][1] = x
       core._radarPositions[unit][2] = y
@@ -270,14 +266,14 @@ end
       ROSTER AND POSITIONS
 #######################################################################################################################
 ]]
-function core:GetRadarPosition(x, y, instanceID)
-      local posX, posY, instanceID = x, y, instanceID
+function core:GetRadarPosition(x, y, mapID)
+      local posX, posY, mapID = x, y, mapID
 
       local playerX = core._positions.player[1]
       local playerY = core._positions.player[2]
-      local playerInstanceID = core._positions.player[3]
+      local playerMapID = core._positions.player[3]
 
-      if playerInstanceID == instanceID then
+      if playerMapID == mapID then
             local offx, offy = (playerX - posX) * core._scale, (posY - playerY) * core._scale
             local x = core._cos * offx + core._sin * offy
             local y = -core._sin * offx + core._cos * offy
@@ -289,11 +285,11 @@ end
 
 function core:_getRadarPosition(src)
       if not src then return end
+
       local unitID = core:FindUnitID(src)
       if not unitID then return end
 
       local p = core._radarPositions[unitID]
-
       if p then
             return unitID, p[1], p[2], p[3]
       else
@@ -303,17 +299,26 @@ end
 
 function core:_getPosition(src)
       if not src then return end
+
       local unitID = core:FindUnitID(src)
       if not unitID then return end
 
-      local p = core._positions[unitID]
+      local x, y, mapID
+      -- If core is enabled, we'll try to hit our cache first
+      -- when core isn't enabled we skip the cache and query positions to be up to date.
+      if core:IsEnabled() then
+            local p = core._positions[unitID]
 
-      if p then
-            return unitID, p[1], p[2], p[3]
+            if p then
+                  x, y, mapID = p[1], p[2], p[3]
+            else
+                  x, y, mapID = GetUnitPosition(unitID)
+            end
       else
-            local x, y, instanceID = GetUnitPosition(unitID)
-            return unitID, x, y, instanceID
+            x, y, mapID = GetUnitPosition(unitID)
       end
+
+      return unitID, x, y, mapID
 end
 
 function core:FindGUID(src)
@@ -330,7 +335,6 @@ end
 
 function core:FindUnitID(src)
       local guid = core:FindGUID(src)
-
       if guid then
             return core._roster[guid]
       else
@@ -339,10 +343,9 @@ function core:FindUnitID(src)
 end
 
 function core:FindUnitByName(name)
-      -- before looking by name, remove any realm name
-      local nameStripped = sgsub(name, "%-[^|]+", "")
-      if core._nameRoster[nameStripped] then
-            return core._nameRoster[nameStripped]
+      local nameWithoutRealm = sgsub(name, "%-[^|]+", "")
+      if core._nameRoster[nameWithoutRealm] then
+            return core._nameRoster[nameWithoutRealm]
       else
             return nil
       end
@@ -357,7 +360,7 @@ function core:_updatePositions()
 
             local x, y, map = GetUnitPosition(unit)
 
-            if (not x) and core._staticPoints[unit] then
+            if (not x) and core:_isStatic(unit) then
                   x, y, map = core._staticPoints[unit][1], core._staticPoints[unit][2], core._positions.player[3]
             end
 
@@ -469,7 +472,9 @@ local linePrototype = {
       BelongsTo = function(this, sourceX, sourceY, targetX, targetY)
             local _, pX, pY = core:_getPosition("player")
 
-            if not pX then return false end
+            if not pX then
+                  return false
+            end
 
             local VECTOR_LENGTH = 300
             local VECTOR_DEPTH = (4/core._scale) * 0.125 * this.width + 1
@@ -541,10 +546,10 @@ local linePrototype = {
       end,
 
       _updateColor = function(this)
+            core._inDangerLine = false
+
             local srcUnit, srcX, srcY = core:_getPosition(this.source)
             local destUnit, destX, destY = core:_getPosition(this.destination)
-
-            core._inDangerLine = false
 
             if srcUnit == "player" or destUnit == "player" then return end
             if (not srcX) or (not destX) then return end
@@ -692,7 +697,6 @@ local linePrototype = {
 
                   this.texture:SetTexCoord(TLx, TLy, BLx, BLy, TRx, TRy, BRx, BRy)
                   this:ClearAllPoints()
-
                   this:SetPoint("BOTTOMLEFT", core._frame, "CENTER", cx - Bwid, cy - Bhgt)
                   this:SetPoint("TOPRIGHT", core._frame, "CENTER", cx + Bwid, cy + Bhgt)
             end
@@ -713,6 +717,8 @@ setmetatable(linePrototype, lineMT)
 local linePrototypeMT = { __index = linePrototype }
 
 function core:_createLine(src, dest)
+      core._lines = core._lines or {}
+
       if not src then
             warn("unable to create line without source")
             return
@@ -736,21 +742,17 @@ function core:_createLine(src, dest)
       end
 
       local key = core:_genKey(srcGUID, destGUID)
-
-      core._lines = core._lines or {}
       local line
-
       if core._lines[key] then
             line = core._lines[key]
       else
             line = CreateFrame("Frame", "WA_RADAR_LINE" .. key, core._frame)
             setmetatable(line, linePrototypeMT)
-
             line.key = key
             line:SetFrameStrata("MEDIUM")
             line.texture = line.texture or line:CreateTexture(nil, "BACKGROUND", nil, 1)
             line.texture:SetAllPoints()
-            line.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Square_White")
+            line.texture:SetTexture([[Interface\AddOns\WeakAuras\Media\Textures\Square_White]])
             line:SetSize(20, 20)
 
             core._lines[key] = line
@@ -758,7 +760,6 @@ function core:_createLine(src, dest)
 
       line.source = srcGUID
       line.destination = destGUID
-
       line.texture:SetVertexColor(0,1,0,1)
       line.texture:SetBlendMode("BLEND")
       line:Hide()
@@ -856,7 +857,6 @@ local diskPrototype = {
 
             this.radiusScaled = radiusScaled
             this:SetSize(R2, R2)
-
             this:_updateColor()
       end,
 
@@ -916,6 +916,8 @@ setmetatable(diskPrototype, diskMT)
 local diskPrototypeMT = { __index = diskPrototype }
 
 function core:_createDisk(src, text)
+      core._disks = core._disks or {}
+
       if not src then
             warn("unable to create disk without source")
             return
@@ -929,11 +931,7 @@ function core:_createDisk(src, text)
       end
 
       local key = core:_genKey(srcGUID)
-
-      core._disks = core._disks or {}
-
       local disk
-
       if core._disks[key] then
             disk = core._disks[key]
       else
@@ -946,7 +944,7 @@ function core:_createDisk(src, text)
 
             disk.texture = disk.texture or disk:CreateTexture(nil, "BACKGROUND", nil, 1)
             disk.texture:SetAllPoints()
-            disk.texture:SetTexture("Interface\\AddOns\\WeakAuras\\Media\\Textures\\Circle_White")
+            disk.texture:SetTexture([[Interface\AddOns\WeakAuras\Media\Textures\Circle_White]])
             disk.texture:SetVertexColor(1, 0, 0, 0.5)
 
             core._disks[key] = disk
@@ -955,10 +953,9 @@ function core:_createDisk(src, text)
       disk.txt = disk.txt or disk:CreateFontString("WA_RADAR_RISK_TXT_" .. key, "ARTWORK", "GameFontNormalLarge")
       disk.txt:SetPoint("CENTER", disk, "CENTER", 0, 22)
       disk.txt:SetText(text or "")
-
       disk.source = srcGUID
-
       disk:Hide()
+
       return disk
 end
 
@@ -997,10 +994,7 @@ end
 function core:Enable()
       if core._enabled then return end
 
-      -- before we enable, run the updater once,
-      -- make sure everything has an initial value
       core:_update()
-
       core._enabled = true
       warn("Radar enabled successfully!")
 end
@@ -1052,7 +1046,7 @@ function core:Static(name, x, y, raidTargetIndex)
       core._unitRoster = core._unitRoster or {}
       core._displayedUnits = core._displayedUnits or {}
 
-      local unit, posX, posY, instanceID = core:_getPosition(x)
+      local unit, posX, posY, mapID = core:_getPosition(x)
 
       if not unit and ((not y) or type(x) ~= "number" ) then
             warn("unable to create static for %s, specifiy the correct x and y-coordinates.", name)

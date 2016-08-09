@@ -204,7 +204,7 @@ function core:_initBlip(unit, raidTargetIndex)
       if core._blips[unit] then
             blip = core._blips[unit]
       else
-            blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. unit, core._frame)
+            blip = CreateFrame("Frame", "WA_RADAR_BLIP" .. unit)
             blip:SetPoint("CENTER")
             blip:SetFrameStrata("DIALOG")
             blip:SetFrameLevel(5)
@@ -212,6 +212,10 @@ function core:_initBlip(unit, raidTargetIndex)
             blip.t = blip.t or blip:CreateTexture(nil, "BORDER", nil)
             blip.t:SetAllPoints()
       end
+
+      -- Always re-set the parent.
+      -- Fixes the issue of Blips not beeing shown when the user has reloaded the UI.
+      blip:SetParent(core._frame)
 
       if raidTargetIndex and MARKER_TEXTURES[raidTargetIndex] then
             blip:SetSize(28,28)
@@ -1210,6 +1214,8 @@ function core:RemoveDisk(src)
       end
 
       local disk = core:_createDisk(src)
+      if not disk then return end
+
       disk:Destroy()
 end
 

@@ -11,7 +11,7 @@ else I suggest you take an easier tutorial then this ;)
 CUSTOM TRIGGER
       Type: Custom
       Event Type: Event
-      COMBAT_LOG_EVENT_UNFILTERED, ENCOUNTER_END
+      COMBAT_LOG_EVENT_UNFILTERED, ENCOUNTER_END, CORE_ARCHI_TEARDOWN
 ]]
 local CUSTOM_TRIGGER = function(event, ...)
       local core = WA_RADAR_CORE
@@ -156,27 +156,23 @@ local CUSTOM_TRIGGER = function(event, ...)
             end
       end
 
-      -- Archimonde has started casting Nether Ascension, this means he's going into last phase.
+      -- Archimonde has started casting Nether Ascension, this means he's going into last phase, or the encounter has ended.
       -- Let's get the rader off the screen, we don't really need it anymore.
-      -- I'll add a little delay from the start of the cast, just because it's fancy :)
-      if subevent == "SPELL_CAST_START" and spellId == NETHER_ASCENSION_SPELL_ID then
-            C_Timer.After(5, function()
-                  aura_env.shackles = {}
-                  aura_env.lines = {}
-                  aura_env.shackleCount = 0
-                  core:Disable()
+      -- I add delay because I want any pending Focused Chaos beams or Shackles to be gone before disabling the radar.
+      -- Because we cannot clean up aura_env in a C_Timer function we'll just broadcast our own custom even to "tear down".
+      if (subevent == "SPELL_CAST_START" and spellId == NETHER_ASCENSION_SPELL_ID) or (event == "ENCOUNTER_END" and encounterId == ARCHIMONDE_ENCOUNTER_ID) then
+            C_Timer.After(10, function()
+                  WeakAuras.ScanEvents("CORE_ARCHI_TEARDOWN")
             end)
       end
 
-      -- The encounter has ended, either because we wiped, or we killed him (yay!)
-      -- Let's disable CORE. and reset our internal data stores.
-      if event == "ENCOUNTER_END" and encounterId == ARCHIMONDE_ENCOUNTER_ID then
-            C_Timer.After(5, function()
-                  aura_env.shackles = {}
-                  aura_env.lines = {}
-                  aura_env.shackleCount = 0
-                  core:Disable()
-            end)
+      -- We called to tear down, so let's do so.
+      -- Clean up all vars and disable CORE.
+      if event == "CORE_ARCHI_TEARDOWN" then
+            aura_env.shackles = {}
+            aura_env.lines = {}
+            aura_env.shackleCount = 0
+            core:Disable()
       end
 
       -- Don't forget, a WeakAura trigger function has to return true/false for it to work.

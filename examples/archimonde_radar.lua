@@ -22,7 +22,6 @@ local CUSTOM_TRIGGER = function(event, ...)
 
       local encounterId, subevent, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellID, extraSpellName, extraSchool = ...
 
-
       local SHACKLED_TORMENT_SPELL_ID = 184964
       local FOCUSED_CHAOS_SPELL_ID = 185014
       local NETHER_ASCENSION_SPELL_ID = 190313
@@ -175,8 +174,8 @@ local CUSTOM_TRIGGER = function(event, ...)
             core:Disable()
       end
 
-      -- Don't forget, a WeakAura trigger function has to return true/false for it to work.
-      -- Let's just always return true. that's easy.
+      -- Just return true, the radar display is done by CORE anyway.
+      -- This WA is just an empty text WeakAura.
       return true
 end
 

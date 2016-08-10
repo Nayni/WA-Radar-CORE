@@ -13,7 +13,10 @@ Radar CORE is a single WeakAura that you just install like any other WeakAuras, 
 
 **I realise that making a global variable is not the safest or even performant option. The reason for sticking with a global for now is purely for simplicity. I think it's a lot simpler to have the core framework in 1 global object then having to communicate with it via WeakAuras.ScanEvents. Performance wise radar CORE is causing no frame lag as thus far. If for any reason it ever becomes necessary to ditch the global it would be perfectly fine. The only functions that would have to be re-written are the public api functions that are just (almost-)proxies into internal functions.**
 
-### STILL BEEING ACTIVELY DEVELOPED!
+### CURRENTLY IN "BETA"
+
+## Preview
+![alt text](preview.jpg "CORE Archimonde example")
 
 ## Getting started
 
@@ -21,6 +24,11 @@ Radar CORE is a WeakAura that sets up a global called WA_RADAR_CORE. This global
 
 The public API of radar CORE tries to be as simple as possible so that you don't have to worry about any display logic or geometry to make radar functionality.
 Read the documentation or browse the examples to see how you could use the core api.
+
+### Install from export string
+
+[WA Radar CORE](http://pastebin.com/Ly5R2pDP)
+[Archimonde](http://pastebin.com/HJ7h9tqD)
 
 ### Install from source
 
@@ -41,10 +49,6 @@ Read the documentation or browse the examples to see how you could use the core 
 15. Check **Custom**
 16. Expand the Text Editor of **Custom Code** and paste the [init code](/CORE_Init.lua) into the editor
 17. You've intsalled radar CORE! Start coding your own boss radar functions or use one of the [examples](/examples/archimonde_radar.lua)
-
-### Install from export string
-
-WeakAura export string coming soon...
 
 ## API Documentation
 

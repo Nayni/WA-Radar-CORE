@@ -27,8 +27,8 @@ Read the documentation or browse the examples to see how you could use the core 
 
 ### Install from export string
 
-[WA Radar CORE](http://pastebin.com/Ly5R2pDP)
-[Archimonde](http://pastebin.com/HJ7h9tqD)
+* [WA Radar CORE](http://pastebin.com/Ly5R2pDP)
+* [Archimonde](http://pastebin.com/HJ7h9tqD)
 
 ### Install from source
 
